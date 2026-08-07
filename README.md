@@ -16,14 +16,15 @@ repositories {
     maven("https://jitpack.io")
 }
 dependencies {
-    implementation("io.github.vlaushkin:pdfkt-core:0.0.1")
+    implementation("com.github.vlaushkin.pdfkt:pdfkt-core:0.0.1")
 }
 ```
 
 Until the artifact reaches Maven Central, JitPack builds it from the
-release tags — the `io.github.vlaushkin` group resolves there as-is.
-For local work, `./gradlew publishToMavenLocal` puts the same coordinate
-in `~/.m2`.
+release tags under its `com.github.<user>.<repo>` group. On Central it
+will be `io.github.vlaushkin:pdfkt-core` — the group the build itself
+publishes, which is also what `./gradlew publishToMavenLocal` puts in
+`~/.m2` for local work.
 
 The JVM and Android artifacts come from JitPack's Linux builders; the
 Apple targets are consumed through the Swift package below instead.
