@@ -1,0 +1,28 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{kt,kts}]
+indent_size = 4
+max_line_length = 120
+ij_kotlin_imports_layout = *,java.**,javax.**,kotlin.**,^
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+ktlint_code_style = intellij_idea
+ktlint_standard_filename = disabled  # multi-type files (Document.kt holds several top-level types)
+ktlint_standard_function-naming = disabled  # backtick test names and DSL functions
+ktlint_standard_no-wildcard-imports = disabled
+ktlint_standard_package-name = disabled
+ktlint_standard_backing-property-naming = disabled
+
+[*.{yml,yaml,md,toml}]
+indent_size = 2
+
+[Makefile]
+indent_style = tab

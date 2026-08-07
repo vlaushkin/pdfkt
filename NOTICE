@@ -1,0 +1,21 @@
+pdfkt
+Copyright (c) 2026 pdfkt contributors.
+Licensed under the Apache License, Version 2.0.
+
+This product embeds the character metrics of the fourteen standard PDF
+fonts, derived from Adobe's AFM files (see third_party/adobe-core14-afm/
+in the source distribution), reproduced under Adobe's licence for them:
+
+    This file and the 14 PostScript(R) AFM files it accompanies may be
+    used, copied, and distributed for any purpose and without charge,
+    with or without modification, provided that all copyright notices
+    are retained; that the AFM files are not distributed without this
+    file; that all modifications to this file or any of the AFM files
+    are prominently noted in the modified file(s); and that this
+    paragraph is not modified. Adobe Systems has no responsibility or
+    obligation to support the use of the AFM files.
+
+Modifications are noted in the embedded copy
+(io.pdfkt.core.font.Standard14Afm): each font's header is verbatim, each
+character metric keeps its C, WX and N fields and drops the bounding box,
+and the kerning and composite-character sections are omitted.

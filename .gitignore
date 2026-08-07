@@ -1,0 +1,21 @@
+# Build
+build/
+.gradle/
+local.properties
+.kotlin/
+
+# IDE / OS
+.idea/
+*.iml
+.DS_Store
+
+# Local font stash for test runs (see PDFKT_TEST_FONT_DIR in the test sources)
+test-fonts/
+
+# ISO 32000-2 — the sponsored copy is licensed to its recipient and must not
+# be committed
+ISO_32000-2*.pdf
+spec/
+
+# SwiftPM
+.build/
