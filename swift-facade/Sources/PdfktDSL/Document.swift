@@ -46,14 +46,7 @@ public struct Document {
     /// quietly — an unencodable character, an emoji without a picture, a
     /// band that overflows its strip — with the refusal's message intact.
     public func toData() throws -> Data {
-        let kotlinBytes = try kotlin.toByteArray()
-        let count = Int(kotlinBytes.size)
-        var data = Data(count: count)
-        data.withUnsafeMutableBytes { dst in
-            guard let base = dst.bindMemory(to: Int8.self).baseAddress else { return }
-            for i in 0..<count { base[i] = kotlinBytes.get(index: Int32(i)) }
-        }
-        return data
+        try kotlin.toNSData()
     }
 
     /// Render and write to `url`, overwriting any existing file.
@@ -87,7 +80,13 @@ public struct DocumentBlock {
 
 @resultBuilder
 public enum DocumentBuilder {
-    public static func buildBlock(_ components: DocumentBlock...) -> [DocumentBlock] { components }
+    // Partial blocks, not a variadic buildBlock: `if` and `for` hand back
+    // [DocumentBlock], and a block may mix those with single expressions.
+    public static func buildBlock() -> [DocumentBlock] { [] }
+    public static func buildPartialBlock(first: DocumentBlock) -> [DocumentBlock] { [first] }
+    public static func buildPartialBlock(first: [DocumentBlock]) -> [DocumentBlock] { first }
+    public static func buildPartialBlock(accumulated: [DocumentBlock], next: DocumentBlock) -> [DocumentBlock] { accumulated + [next] }
+    public static func buildPartialBlock(accumulated: [DocumentBlock], next: [DocumentBlock]) -> [DocumentBlock] { accumulated + next }
     public static func buildOptional(_ component: [DocumentBlock]?) -> [DocumentBlock] { component ?? [] }
     public static func buildEither(first component: [DocumentBlock]) -> [DocumentBlock] { component }
     public static func buildEither(second component: [DocumentBlock]) -> [DocumentBlock] { component }
@@ -186,11 +185,6 @@ public enum DocumentBuilder {
 
 internal extension Data {
     func toKotlinByteArray() -> KotlinByteArray {
-        let result = KotlinByteArray(size: Int32(count))
-        withUnsafeBytes { src in
-            guard let base = src.bindMemory(to: Int8.self).baseAddress else { return }
-            for i in 0..<count { result.set(index: Int32(i), value: base[i]) }
-        }
-        return result
+        NSDataInteropKt.bytesOf(data: self)
     }
 }

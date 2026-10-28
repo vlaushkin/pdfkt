@@ -54,7 +54,13 @@ public struct Blockquote {
 /// list items, table cells.
 @resultBuilder
 public enum BlockContainerBuilder {
-    public static func buildBlock(_ components: Paragraph...) -> [Paragraph] { components }
+    // Partial blocks, not a variadic buildBlock: `if` and `for` hand back
+    // [Paragraph], and a block may mix those with single expressions.
+    public static func buildBlock() -> [Paragraph] { [] }
+    public static func buildPartialBlock(first: Paragraph) -> [Paragraph] { [first] }
+    public static func buildPartialBlock(first: [Paragraph]) -> [Paragraph] { first }
+    public static func buildPartialBlock(accumulated: [Paragraph], next: Paragraph) -> [Paragraph] { accumulated + [next] }
+    public static func buildPartialBlock(accumulated: [Paragraph], next: [Paragraph]) -> [Paragraph] { accumulated + next }
     public static func buildOptional(_ component: [Paragraph]?) -> [Paragraph] { component ?? [] }
     public static func buildEither(first component: [Paragraph]) -> [Paragraph] { component }
     public static func buildEither(second component: [Paragraph]) -> [Paragraph] { component }

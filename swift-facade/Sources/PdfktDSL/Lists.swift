@@ -78,7 +78,13 @@ public struct Item {
 
 @resultBuilder
 public enum ListBuilder {
-    public static func buildBlock(_ components: Item...) -> [Item] { components }
+    // Partial blocks, not a variadic buildBlock: `if` and `for` hand back
+    // [Item], and a block may mix those with single expressions.
+    public static func buildBlock() -> [Item] { [] }
+    public static func buildPartialBlock(first: Item) -> [Item] { [first] }
+    public static func buildPartialBlock(first: [Item]) -> [Item] { first }
+    public static func buildPartialBlock(accumulated: [Item], next: Item) -> [Item] { accumulated + [next] }
+    public static func buildPartialBlock(accumulated: [Item], next: [Item]) -> [Item] { accumulated + next }
     public static func buildOptional(_ component: [Item]?) -> [Item] { component ?? [] }
     public static func buildEither(first component: [Item]) -> [Item] { component }
     public static func buildEither(second component: [Item]) -> [Item] { component }

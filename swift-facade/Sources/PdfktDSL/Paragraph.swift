@@ -62,7 +62,13 @@ public struct Run {
 
 @resultBuilder
 public enum ParagraphBuilder {
-    public static func buildBlock(_ components: Run...) -> [Run] { components }
+    // Partial blocks, not a variadic buildBlock: `if` and `for` hand back
+    // [Run], and a block may mix those with single expressions.
+    public static func buildBlock() -> [Run] { [] }
+    public static func buildPartialBlock(first: Run) -> [Run] { [first] }
+    public static func buildPartialBlock(first: [Run]) -> [Run] { first }
+    public static func buildPartialBlock(accumulated: [Run], next: Run) -> [Run] { accumulated + [next] }
+    public static func buildPartialBlock(accumulated: [Run], next: [Run]) -> [Run] { accumulated + next }
     public static func buildOptional(_ component: [Run]?) -> [Run] { component ?? [] }
     public static func buildEither(first component: [Run]) -> [Run] { component }
     public static func buildEither(second component: [Run]) -> [Run] { component }
@@ -146,7 +152,13 @@ public struct Link {
 
 @resultBuilder
 public enum LinkBuilder {
-    public static func buildBlock(_ components: Text...) -> [Text] { components }
+    // Partial blocks, not a variadic buildBlock: `if` and `for` hand back
+    // [Text], and a block may mix those with single expressions.
+    public static func buildBlock() -> [Text] { [] }
+    public static func buildPartialBlock(first: Text) -> [Text] { [first] }
+    public static func buildPartialBlock(first: [Text]) -> [Text] { first }
+    public static func buildPartialBlock(accumulated: [Text], next: Text) -> [Text] { accumulated + [next] }
+    public static func buildPartialBlock(accumulated: [Text], next: [Text]) -> [Text] { accumulated + next }
     public static func buildOptional(_ component: [Text]?) -> [Text] { component ?? [] }
     public static func buildEither(first component: [Text]) -> [Text] { component }
     public static func buildEither(second component: [Text]) -> [Text] { component }

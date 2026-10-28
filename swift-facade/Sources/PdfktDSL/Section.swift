@@ -60,7 +60,13 @@ public struct SectionBlock {
 
 @resultBuilder
 public enum SectionBuilder {
-    public static func buildBlock(_ components: SectionBlock...) -> [SectionBlock] { components }
+    // Partial blocks, not a variadic buildBlock: `if` and `for` hand back
+    // [SectionBlock], and a block may mix those with single expressions.
+    public static func buildBlock() -> [SectionBlock] { [] }
+    public static func buildPartialBlock(first: SectionBlock) -> [SectionBlock] { [first] }
+    public static func buildPartialBlock(first: [SectionBlock]) -> [SectionBlock] { first }
+    public static func buildPartialBlock(accumulated: [SectionBlock], next: SectionBlock) -> [SectionBlock] { accumulated + [next] }
+    public static func buildPartialBlock(accumulated: [SectionBlock], next: [SectionBlock]) -> [SectionBlock] { accumulated + next }
     public static func buildOptional(_ component: [SectionBlock]?) -> [SectionBlock] { component ?? [] }
     public static func buildEither(first component: [SectionBlock]) -> [SectionBlock] { component }
     public static func buildEither(second component: [SectionBlock]) -> [SectionBlock] { component }

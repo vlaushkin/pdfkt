@@ -51,6 +51,8 @@ final class FacadeFidelityTests: XCTestCase {
             guard let base = dst.bindMemory(to: Int8.self).baseAddress else { return }
             for i in 0..<Int(rawBytes.size) { base[i] = rawBytes.get(index: Int32(i)) }
         }
+        // The bulk path the facade takes must agree with the byte-at-a-time one.
+        XCTAssertEqual(try raw.toNSData(), rawData, file: file, line: line)
         XCTAssertEqual(
             facadeData, rawData,
             "facade and raw bytes differ (\(facadeData.count) vs \(rawData.count))",

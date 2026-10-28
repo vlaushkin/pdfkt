@@ -139,4 +139,50 @@ final class PdfktDSLTests: XCTestCase {
         }
         XCTAssertEqual(try build().toData(), try build().toData(), "a pinned clock must make the bytes reproducible")
     }
+
+    /// `if`, `if`/`else` and `for` in every builder, mixed with plain
+    /// statements: the document must be the one written out by hand.
+    func testControlFlowInBuilders() throws {
+        let date = Date(timeIntervalSince1970: 1_770_000_000)
+        let zone = TimeZone(secondsFromGMT: 0)!
+        let title: String? = "Title"
+        let missing: String? = nil
+        let names = ["One", "Two"]
+        let flowing = Document(date: date, timeZone: zone) {
+            Header { if let title { Paragraph { Text(title) } } }
+            Section(pageSize: .custom(width: 300, height: 300), margins: .all(0), verticalAlignment: .middle) {
+                if let title { Paragraph { Text(title) } }
+                if let missing { Paragraph { Text(missing) } }
+                Paragraph { Text("Fixed") }
+            }
+            for name in names {
+                Paragraph {
+                    Text(name)
+                    if name == "One" { Text(" first").bold() } else { Text(" later") }
+                }
+            }
+            BulletList { for name in names { Item(name) } }
+            Table {
+                Row(header: true) { for name in names { Cell(name) } }
+                if title != nil { Row { Cell("a"); Cell("b") } }
+            }
+            Blockquote { if title != nil { Paragraph { Text("Quoted") } } }
+        }
+        let flat = Document(date: date, timeZone: zone) {
+            Header { Paragraph { Text("Title") } }
+            Section(pageSize: .custom(width: 300, height: 300), margins: .all(0), verticalAlignment: .middle) {
+                Paragraph { Text("Title") }
+                Paragraph { Text("Fixed") }
+            }
+            Paragraph { Text("One"); Text(" first").bold() }
+            Paragraph { Text("Two"); Text(" later") }
+            BulletList { Item("One"); Item("Two") }
+            Table {
+                Row(header: true) { Cell("One"); Cell("Two") }
+                Row { Cell("a"); Cell("b") }
+            }
+            Blockquote { Paragraph { Text("Quoted") } }
+        }
+        XCTAssertEqual(try flowing.toData(), try flat.toData())
+    }
 }

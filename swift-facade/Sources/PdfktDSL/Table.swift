@@ -76,7 +76,13 @@ public struct Cell {
 
 @resultBuilder
 public enum TableBuilder {
-    public static func buildBlock(_ components: Row...) -> [Row] { components }
+    // Partial blocks, not a variadic buildBlock: `if` and `for` hand back
+    // [Row], and a block may mix those with single expressions.
+    public static func buildBlock() -> [Row] { [] }
+    public static func buildPartialBlock(first: Row) -> [Row] { [first] }
+    public static func buildPartialBlock(first: [Row]) -> [Row] { first }
+    public static func buildPartialBlock(accumulated: [Row], next: Row) -> [Row] { accumulated + [next] }
+    public static func buildPartialBlock(accumulated: [Row], next: [Row]) -> [Row] { accumulated + next }
     public static func buildOptional(_ component: [Row]?) -> [Row] { component ?? [] }
     public static func buildEither(first component: [Row]) -> [Row] { component }
     public static func buildEither(second component: [Row]) -> [Row] { component }
@@ -85,7 +91,13 @@ public enum TableBuilder {
 
 @resultBuilder
 public enum RowBuilder {
-    public static func buildBlock(_ components: Cell...) -> [Cell] { components }
+    // Partial blocks, not a variadic buildBlock: `if` and `for` hand back
+    // [Cell], and a block may mix those with single expressions.
+    public static func buildBlock() -> [Cell] { [] }
+    public static func buildPartialBlock(first: Cell) -> [Cell] { [first] }
+    public static func buildPartialBlock(first: [Cell]) -> [Cell] { first }
+    public static func buildPartialBlock(accumulated: [Cell], next: Cell) -> [Cell] { accumulated + [next] }
+    public static func buildPartialBlock(accumulated: [Cell], next: [Cell]) -> [Cell] { accumulated + next }
     public static func buildOptional(_ component: [Cell]?) -> [Cell] { component ?? [] }
     public static func buildEither(first component: [Cell]) -> [Cell] { component }
     public static func buildEither(second component: [Cell]) -> [Cell] { component }

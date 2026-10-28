@@ -53,7 +53,13 @@ public struct ColophonBlock {
 
 @resultBuilder
 public enum ColophonBuilder {
-    public static func buildBlock(_ components: ColophonBlock...) -> [ColophonBlock] { components }
+    // Partial blocks, not a variadic buildBlock: `if` and `for` hand back
+    // [ColophonBlock], and a block may mix those with single expressions.
+    public static func buildBlock() -> [ColophonBlock] { [] }
+    public static func buildPartialBlock(first: ColophonBlock) -> [ColophonBlock] { [first] }
+    public static func buildPartialBlock(first: [ColophonBlock]) -> [ColophonBlock] { first }
+    public static func buildPartialBlock(accumulated: [ColophonBlock], next: ColophonBlock) -> [ColophonBlock] { accumulated + [next] }
+    public static func buildPartialBlock(accumulated: [ColophonBlock], next: [ColophonBlock]) -> [ColophonBlock] { accumulated + next }
     public static func buildOptional(_ component: [ColophonBlock]?) -> [ColophonBlock] { component ?? [] }
     public static func buildEither(first component: [ColophonBlock]) -> [ColophonBlock] { component }
     public static func buildEither(second component: [ColophonBlock]) -> [ColophonBlock] { component }
