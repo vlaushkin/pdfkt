@@ -55,20 +55,64 @@ public interface BlockSink {
     /** Append an already-built block — the sink every builder here routes through. */
     public fun add(block: Block)
 
-    /** Append a plain-text paragraph. */
-    public fun paragraph(text: String, align: TextAlign = TextAlign.Left) {
-        add(ParagraphBlock(content = listOf(TextRun(text)), align = align))
+    /**
+     * Append a plain-text paragraph.
+     *
+     * @param indentLeft how far in from the left of the column its lines start.
+     * @param indentRight how far in from the right they end — where a
+     *   right-aligned line stops short of the edge.
+     * @param spacingBefore the gap above it, or null for the theme's.
+     * @param spacingAfter the gap below it, or null for the theme's.
+     */
+    public fun paragraph(
+        text: String,
+        align: TextAlign = TextAlign.Left,
+        indentLeft: Pt = Pt.ZERO,
+        indentRight: Pt = Pt.ZERO,
+        spacingBefore: Pt? = null,
+        spacingAfter: Pt? = null,
+    ) {
+        add(
+            ParagraphBlock(
+                content = listOf(TextRun(text)),
+                align = align,
+                indentLeft = indentLeft,
+                indentRight = indentRight,
+                spacingBefore = spacingBefore,
+                spacingAfter = spacingAfter,
+            ),
+        )
     }
 
     /**
-     * Append a paragraph built from inline runs.
+     * Append a paragraph built from inline runs, on the terms of the plain-text
+     * one.
      *
      * ```kotlin
      * paragraph { +"This is the Q4 2026 summary." }
+     * paragraph(align = TextAlign.Right, indentRight = 5.pt, spacingBefore = 10.pt) {
+     *     text("Фото: Анна") { fontSize = 8.pt; color = Rgb.of(0x616161) }
+     * }
      * ```
      */
-    public fun paragraph(align: TextAlign = TextAlign.Left, block: InlineScope.() -> Unit) {
-        add(ParagraphBlock(content = collectRuns(block), align = align))
+    public fun paragraph(
+        align: TextAlign = TextAlign.Left,
+        indentLeft: Pt = Pt.ZERO,
+        indentRight: Pt = Pt.ZERO,
+        spacingBefore: Pt? = null,
+        spacingAfter: Pt? = null,
+        block: InlineScope.() -> Unit,
+    ) {
+        add(
+            ParagraphBlock(
+                content = collectRuns(block),
+                align = align,
+                indentLeft = indentLeft,
+                indentRight = indentRight,
+                spacingBefore = spacingBefore,
+                spacingAfter = spacingAfter,
+            ),
+        )
     }
 
     /** Append a heading of the given [level] (1..6) with plain text content. */

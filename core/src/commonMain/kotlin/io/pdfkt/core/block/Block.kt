@@ -10,8 +10,10 @@ package io.pdfkt.core.block
 
 import io.pdfkt.core.font.FontRef
 import io.pdfkt.core.image.ImageRef
+import io.pdfkt.core.model.Insets
 import io.pdfkt.core.model.Pt
 import io.pdfkt.core.model.Rgb
+import io.pdfkt.core.model.Size
 import io.pdfkt.core.model.pt
 
 // No clause applies: L4 is this library's own design. This is the tree the DSL builds and the engine
@@ -376,6 +378,45 @@ public data object PageBreakBlock : Block {
     override val spacingAfter: Pt? = null
     override val keepWithNext: Boolean = false
     override val keepTogether: Boolean = false
+}
+
+/**
+ * A run of pages set on paper of their own: [content] starts a new page of
+ * [pageSize] with [margins], continues onto as many more of the same as it
+ * needs, and whatever follows the section starts a new page on the document's
+ * own paper again.
+ *
+ * This is what an album lowers a photograph to when every photograph is its own
+ * page of its own size — the cover a square, each picture a sheet exactly as
+ * wide and as tall as it is — and what a report lowers a landscape table to. It
+ * is a statement about the sequence of pages, as a [PageBreakBlock] is, and so it
+ * belongs at the top level of a document: one inside a list item or a table cell
+ * is refused when the page is planned, because the box it would be planned into
+ * is already on a page whose paper has been chosen.
+ *
+ * The document's bands, if it has any, are drawn on a section's pages too, in
+ * strips taken from that page's own size and margins.
+ *
+ * @property pageSize the paper — the `/MediaBox` of every page of the section
+ *   (ISO 32000-2:2020 §7.7.3.3).
+ * @property margins what is kept clear on all four sides of it. Zero is a page
+ *   whose content reaches its edges, which is what a photograph printed to the
+ *   bleed is.
+ * @property verticalAlign where the content of a page sits when it does not
+ *   fill the page: [VerticalAlign.Middle] is a title page, centred top to
+ *   bottom. A section that runs onto a second page aligns each page on its own.
+ * @property content the blocks of the section, in order.
+ */
+public data class SectionBlock(
+    public val pageSize: Size,
+    public val margins: Insets,
+    public val verticalAlign: VerticalAlign = VerticalAlign.Top,
+    public val content: List<Block>,
+) : Block {
+    override val spacingBefore: Pt? get() = null
+    override val spacingAfter: Pt? get() = null
+    override val keepWithNext: Boolean get() = false
+    override val keepTogether: Boolean get() = false
 }
 
 /** How the lines of a paragraph sit in their column. */

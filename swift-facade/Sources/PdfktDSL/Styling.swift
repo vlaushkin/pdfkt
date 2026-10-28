@@ -129,3 +129,65 @@ public enum ListMarker {
         }
     }
 }
+
+/// A font program handed over as the bytes of a TrueType file — what a
+/// document needs to be set in anything beyond the Latin of the standard 14
+/// fonts: Cyrillic, Greek, accented Latin past WinAnsi.
+///
+/// The `id` names the program within one document; two `Font`s with the same
+/// id are the same font. Only the glyphs a document draws are embedded.
+public struct Font {
+    internal let kotlin: FontRef
+
+    public init(data: Data, id: String) {
+        self.kotlin = FontRefSupplied(bytes: data.toKotlinByteArray(), id: id)
+    }
+}
+
+/// How the document is set: the face every paragraph and heading is drawn in,
+/// the body size, how far apart the lines are, and the colour of the text.
+///
+/// A `Text` that states its own size or colour overrides the theme for itself.
+/// `bold()` and `italic()` draw the same face when the theme has one font, as
+/// a single TrueType file has no other weight in it.
+public struct Theme {
+    public var font: Font?
+    public var fontSize: Double
+    public var lineHeight: Double
+    public var textColor: Int
+
+    /// - Parameters:
+    ///   - font: the face, or `nil` for Helvetica.
+    ///   - fontSize: the body size in points.
+    ///   - lineHeight: the distance between baselines as a multiple of the size.
+    ///   - textColor: `0xRRGGBB`.
+    public init(font: Font? = nil, fontSize: Double = 11, lineHeight: Double = 1.2, textColor: Int = 0x000000) {
+        self.font = font
+        self.fontSize = fontSize
+        self.lineHeight = lineHeight
+        self.textColor = textColor
+    }
+
+    internal var kotlin: Pdfkt.Theme {
+        let family = font.map { FontFamily.companion.of(font: $0.kotlin) } ?? FontFamily.companion.HELVETICA
+        return ObjCInteropKt.themeOf(
+            family: family,
+            fontSize: fontSize,
+            lineHeight: lineHeight,
+            textColor: Int32(textColor)
+        )
+    }
+}
+
+/// Where a page's content sits top to bottom when it does not fill the page.
+public enum VerticalAlignment {
+    case top, middle, bottom
+
+    internal var kotlin: VerticalAlign {
+        switch self {
+        case .top: return .top
+        case .middle: return .middle
+        case .bottom: return .bottom
+        }
+    }
+}

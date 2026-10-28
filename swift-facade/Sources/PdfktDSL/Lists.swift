@@ -69,7 +69,7 @@ public struct Item {
         } else {
             scope.item { itemScope in
                 for paragraph in self.paragraphs ?? [] {
-                    itemScope.paragraph(align: paragraph.align.kotlin, block: paragraph.applyToInline)
+                    paragraph.apply(to: itemScope)
                 }
             }
         }

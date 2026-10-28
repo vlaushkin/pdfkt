@@ -8,6 +8,7 @@
  */
 package io.pdfkt.core.fragment
 
+import io.pdfkt.core.block.VerticalAlign
 import io.pdfkt.core.font.FontCatalog
 import io.pdfkt.core.model.Insets
 import io.pdfkt.core.model.Pt
@@ -89,8 +90,16 @@ public data class PageTemplate(public val size: Size, public val content: Rect) 
  * @param fonts the document's font catalog, which is also the emitter's: a font
  *   measured from one catalog and written from another would be two fonts.
  * @param template the page and the area on it that the content goes in.
+ * @param verticalAlign where a page's content sits in the content area when it
+ *   does not fill it: hung from the top, as running text is, or centred or
+ *   stood on the bottom, as a title page is. Each page is aligned on its own,
+ *   by what was placed on it.
  */
-public class Fragmenter(fonts: FontCatalog, private val template: PageTemplate) {
+public class Fragmenter(
+    fonts: FontCatalog,
+    private val template: PageTemplate,
+    private val verticalAlign: VerticalAlign = VerticalAlign.Top,
+) {
     private val planner: BlockPlanner = BlockPlanner(fonts)
 
     /**
@@ -133,10 +142,33 @@ public class Fragmenter(fonts: FontCatalog, private val template: PageTemplate) 
                     "would add a blank page for ever. This is the progress guard " +
                     "holding where a planner did not"
             }
-            val onThePage = placed.map { item -> item.translated(template.content.left, template.content.top) }
+            val consumed = when (fit) {
+                is FitResult.Fits -> fit.consumed
+                is FitResult.Splits -> fit.consumed
+                FitResult.Defers -> Pt.ZERO
+            }
+            val drop = slack(consumed)
+            val onThePage = placed.map { item -> item.translated(template.content.left, template.content.top - drop) }
             pages += PagePlan(template.size, onThePage)
             pending = rest
         }
         return pages.ifEmpty { listOf(PagePlan(template.size)) }
+    }
+
+    /**
+     * How far below the top of the content area a page whose content reaches
+     * [consumed] down starts, for [verticalAlign].
+     *
+     * Content that overfills the area — by no more than the planners' tolerance,
+     * since nothing else is placed — is hung from the top rather than pushed up
+     * past it.
+     */
+    private fun slack(consumed: Pt): Pt {
+        val room = maxOf(template.content.height - consumed, Pt.ZERO)
+        return when (verticalAlign) {
+            VerticalAlign.Top -> Pt.ZERO
+            VerticalAlign.Middle -> room / 2.0f
+            VerticalAlign.Bottom -> room
+        }
     }
 }

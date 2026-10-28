@@ -67,7 +67,7 @@ public struct Cell {
         } else {
             scope.cell(align: align.kotlin, verticalAlign: .top, backgroundColor: nil) { cellScope in
                 for paragraph in self.paragraphs ?? [] {
-                    cellScope.paragraph(align: paragraph.align.kotlin, block: paragraph.applyToInline)
+                    paragraph.apply(to: cellScope)
                 }
             }
         }

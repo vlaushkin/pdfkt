@@ -14,3 +14,4 @@ public typealias KotlinCellScope = Pdfkt.CellScope
 public typealias KotlinListScope = Pdfkt.ListScope
 public typealias KotlinListItemScope = Pdfkt.ListItemScope
 public typealias KotlinBlockquoteScope = Pdfkt.BlockquoteScope
+public typealias KotlinSectionScope = Pdfkt.SectionScope

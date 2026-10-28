@@ -9,6 +9,7 @@
 package io.pdfkt.core.doc
 
 import io.pdfkt.core.block.Block
+import io.pdfkt.core.block.SectionBlock
 import io.pdfkt.core.fragment.PageTemplate
 import io.pdfkt.core.model.Insets
 import io.pdfkt.core.model.Pt
@@ -64,12 +65,19 @@ public data class DocumentSpec(
     public val clock: Clock,
 ) {
     init {
-        require(margins.horizontal < pageSize.width) {
-            "margins of ${margins.horizontal} across a page ${pageSize.width} wide leave no column " +
+        requireRoom(pageSize, margins, "the document's")
+        for (section in content.filterIsInstance<SectionBlock>()) {
+            requireRoom(section.pageSize, section.margins, "a section's")
+        }
+    }
+
+    private fun requireRoom(size: Size, insets: Insets, whose: String) {
+        require(insets.horizontal < size.width) {
+            "margins of ${insets.horizontal} across $whose page ${size.width} wide leave no column " +
                 "for the text"
         }
-        require(margins.vertical + bandHeight < pageSize.height) {
-            "margins of ${margins.vertical} and bands of $bandHeight down a page ${pageSize.height} " +
+        require(insets.vertical + bandHeight < size.height) {
+            "margins of ${insets.vertical} and bands of $bandHeight down $whose page ${size.height} " +
                 "tall leave no room for the content: a document is written in order to be read"
         }
     }
@@ -78,7 +86,7 @@ public data class DocumentSpec(
      * The area between the margins, before any band is taken out of it — what
      * the page would give the content if it had neither header nor footer.
      */
-    public val printableArea: Rect get() = pageSize.toRect().deflate(margins)
+    public val printableArea: Rect get() = printableArea(pageSize, margins)
 
     /**
      * Where the blocks go: the printable area with the bands taken off the top
@@ -88,9 +96,7 @@ public data class DocumentSpec(
      * area *between* the bands and never knows the bands exist. A reserved
      * strip and a wider margin are the same thing to it.
      */
-    public val contentArea: Rect get() = printableArea.deflate(
-        Insets(Pt.ZERO, footer?.height ?: Pt.ZERO, Pt.ZERO, header?.height ?: Pt.ZERO),
-    )
+    public val contentArea: Rect get() = contentArea(pageSize, margins)
 
     /**
      * The strip the header is planned into, at the top of the printable area, or
@@ -101,17 +107,41 @@ public data class DocumentSpec(
      * reflow the document around where the header happens to appear, which is a
      * worse surprise than a page with a blank strip at the top.
      */
-    public val headerArea: Rect? get() = header?.let { band ->
-        Rect(printableArea.x, printableArea.top - band.height, printableArea.width, band.height)
-    }
+    public val headerArea: Rect? get() = headerArea(pageSize, margins)
 
     /** The strip the footer is planned into, at the foot of the printable area. */
-    public val footerArea: Rect? get() = footer?.let { band ->
-        Rect(printableArea.x, printableArea.y, printableArea.width, band.height)
-    }
+    public val footerArea: Rect? get() = footerArea(pageSize, margins)
 
     /** The page and its content area, as the fragmenter takes them. */
-    public fun pageTemplate(): PageTemplate = PageTemplate(pageSize, contentArea)
+    public fun pageTemplate(): PageTemplate = pageTemplate(pageSize, margins)
+
+    /**
+     * [printableArea] of a page of [size] with [margins] — the document's own
+     * page, or one of a `SectionBlock`'s. Every area below is a function of the
+     * page it is on for the same reason: a section's pages carry the
+     * document's bands in strips cut from their own paper.
+     */
+    public fun printableArea(size: Size, margins: Insets): Rect = size.toRect().deflate(margins)
+
+    /** [contentArea] of a page of [size] with [margins]. */
+    public fun contentArea(size: Size, margins: Insets): Rect = printableArea(size, margins).deflate(
+        Insets(Pt.ZERO, footer?.height ?: Pt.ZERO, Pt.ZERO, header?.height ?: Pt.ZERO),
+    )
+
+    /** [headerArea] of a page of [size] with [margins]. */
+    public fun headerArea(size: Size, margins: Insets): Rect? = header?.let { band ->
+        val printable = printableArea(size, margins)
+        Rect(printable.x, printable.top - band.height, printable.width, band.height)
+    }
+
+    /** [footerArea] of a page of [size] with [margins]. */
+    public fun footerArea(size: Size, margins: Insets): Rect? = footer?.let { band ->
+        val printable = printableArea(size, margins)
+        Rect(printable.x, printable.y, printable.width, band.height)
+    }
+
+    /** [pageTemplate] of a page of [size] with [margins]. */
+    public fun pageTemplate(size: Size, margins: Insets): PageTemplate = PageTemplate(size, contentArea(size, margins))
 
     private val bandHeight: Pt get() = (header?.height ?: Pt.ZERO) + (footer?.height ?: Pt.ZERO)
 }

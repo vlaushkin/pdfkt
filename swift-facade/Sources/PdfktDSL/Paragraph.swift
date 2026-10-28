@@ -5,6 +5,10 @@ import Pdfkt
 public struct Paragraph {
     internal let runs: [Run]
     internal var align: Alignment = .left
+    internal var indentLeft: Double = 0
+    internal var indentRight: Double = 0
+    internal var spacingBefore: Double?
+    internal var spacingAfter: Double?
 
     public init(@ParagraphBuilder content: () -> [Run]) {
         self.runs = content()
@@ -16,8 +20,37 @@ public struct Paragraph {
         return copy
     }
 
+    /// How far in from the left and the right of the column its lines run —
+    /// a right-aligned line that stops short of the edge says `right:`.
+    public func indent(left: Double = 0, right: Double = 0) -> Paragraph {
+        var copy = self
+        copy.indentLeft = left
+        copy.indentRight = right
+        return copy
+    }
+
+    /// The gaps above and below it, in points. One left out is the theme's.
+    public func spacing(before: Double? = nil, after: Double? = nil) -> Paragraph {
+        var copy = self
+        if let before { copy.spacingBefore = before }
+        if let after { copy.spacingAfter = after }
+        return copy
+    }
+
     internal func applyToInline(_ scope: KotlinInlineScope) {
         for run in runs { run.apply(scope) }
+    }
+
+    internal func apply(to sink: any BlockSink) {
+        ObjCInteropKt.spacedParagraph(
+            sink,
+            align: align.kotlin,
+            indentLeft: indentLeft,
+            indentRight: indentRight,
+            spacingBefore: spacingBefore.map { KotlinDouble(value: $0) },
+            spacingAfter: spacingAfter.map { KotlinDouble(value: $0) },
+            block: applyToInline
+        )
     }
 }
 

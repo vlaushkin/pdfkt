@@ -16,7 +16,7 @@ repositories {
     maven("https://jitpack.io")
 }
 dependencies {
-    implementation("com.github.vlaushkin.pdfkt:pdfkt-core:0.0.1")
+    implementation("com.github.vlaushkin.pdfkt:pdfkt-core:0.0.2")
 }
 ```
 
@@ -80,8 +80,40 @@ an emoji policy — and no silent loss: a glyph the font cannot draw is an
 error naming the character, never a blank page.
 
 An album, a report, an invoice are *application* vocabularies. They lower
-onto this one — `landscape()`, `Margins`, `image(bytes, fit,
+onto this one — `section()`, `landscape()`, `Margins`, `image(bytes, fit,
 rotationDegrees)`, `pageBreak()`, colophons — and live in the application.
+
+### Pages of their own size
+
+`section(pageSize, margins, verticalAlign) { }` sets the pages it writes on
+paper of their own; the blocks after it are back on the document's paper. A
+photo album is one section per page — a square cover centred top to bottom,
+then each photograph on a sheet exactly its size, with a line under it:
+
+```kotlin
+val nunito = FontFamily.of(FontRefSupplied(nunitoBytes, "Nunito-Light"))
+val none = Margins.Fixed(0.pt, 0.pt, 0.pt, 0.pt)
+
+val album = document {
+    clock = Clock { PdfDate.ofEpochSeconds(System.currentTimeMillis() / 1000) }
+    theme = Theme(bodyFamily = nunito, lineHeight = 1.5f)
+
+    val side = PageSize.A4.toSize().width
+    section(PageSize.Custom(side, side), margins = none, verticalAlign = VerticalAlign.Middle) {
+        paragraph(align = TextAlign.Center, spacingAfter = 10.pt) { text("Лето в Карелии") { fontSize = side / 20.0f } }
+        paragraph(align = TextAlign.Center) { text("Июль 2026") { fontSize = side / 35.0f } }
+    }
+    section(PageSize.Custom(640.pt, 520.pt), margins = Margins.Fixed(0.pt, 0.pt, 10.pt, 0.pt)) {
+        image(photoBytes) // fills the 640 pt column: 480 pt tall
+        paragraph(align = TextAlign.Right, indentRight = 5.pt, spacingBefore = 10.pt) {
+            text("Фото: Анна") { fontSize = 8.pt; color = Rgb.of(0x616161) }
+        }
+    }
+}
+```
+
+A `pageBreak()` next to a section adds no blank page; the document's header
+and footer are drawn on a section's pages too, in strips cut from that page.
 
 ## Swift (iOS / macOS)
 
@@ -114,6 +146,24 @@ let doc = Document {
 }
 
 try doc.write(to: outputURL)
+```
+
+Sections, themes and fonts handed over as bytes read the same way:
+
+```swift
+let nunito = Font(data: nunitoData, id: "Nunito-Light")
+
+let album = Document(theme: Theme(font: nunito, lineHeight: 1.5)) {
+    Section(pageSize: .custom(width: 595.276, height: 595.276), margins: .all(0), verticalAlignment: .middle) {
+        Paragraph { Text("Лето в Карелии").fontSize(29.76) }.alignment(.center).spacing(after: 10)
+        Paragraph { Text("Июль 2026").fontSize(17.01) }.alignment(.center)
+    }
+    Section(pageSize: .custom(width: 640, height: 520), margins: Margins(top: 0, right: 0, bottom: 10, left: 0)) {
+        Image(data: photo)
+        Paragraph { Text("Фото: Анна").fontSize(8.42).color(0x616161) }
+            .alignment(.right).indent(right: 5).spacing(before: 10)
+    }
+}
 ```
 
 Errors are real Swift errors: the engine's no-silent-loss refusals (an

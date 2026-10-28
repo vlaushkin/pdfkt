@@ -45,7 +45,7 @@ public struct Blockquote {
 
     internal func applyToQuote(_ scope: KotlinBlockquoteScope) {
         for paragraph in paragraphs {
-            scope.paragraph(align: paragraph.align.kotlin, block: paragraph.applyToInline)
+            paragraph.apply(to: scope)
         }
     }
 }

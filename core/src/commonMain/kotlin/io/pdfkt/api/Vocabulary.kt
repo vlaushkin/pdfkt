@@ -141,6 +141,9 @@ public typealias ImageBlock = io.pdfkt.core.block.ImageBlock
 /** The end of a page, wherever the flow has got to — what [DocumentScope.pageBreak] adds. */
 public typealias PageBreakBlock = io.pdfkt.core.block.PageBreakBlock
 
+/** A run of pages on paper of their own — what [DocumentScope.section] writes. */
+public typealias SectionBlock = io.pdfkt.core.block.SectionBlock
+
 /** One stretch of inline content inside a paragraph or a heading — what [InlineRunSink.add] takes. */
 public typealias InlineRun = io.pdfkt.core.block.InlineRun
 

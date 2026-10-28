@@ -8,13 +8,19 @@
  */
 package io.pdfkt.core.doc
 
+import io.pdfkt.core.block.VerticalAlign
 import io.pdfkt.core.emit.PlanEmitter
 import io.pdfkt.core.font.FontCatalog
 import io.pdfkt.core.fragment.Fragmenter
 import io.pdfkt.core.image.ImageCatalog
+import io.pdfkt.core.model.Insets
+import io.pdfkt.core.model.Size
 import io.pdfkt.core.obj.PdfDate
 import io.pdfkt.core.plan.PagePlan
 import io.pdfkt.core.resolve.Resolver
+import io.pdfkt.core.resolve.StyledBlock
+import io.pdfkt.core.resolve.StyledPageBreak
+import io.pdfkt.core.resolve.StyledSection
 import io.pdfkt.core.style.Theme
 import kotlinx.io.Sink
 
@@ -83,14 +89,65 @@ public fun render(spec: DocumentSpec, theme: Theme, sink: Sink) {
     val fonts = FontCatalog()
     val images = ImageCatalog()
     val styled = Resolver(theme, fonts).resolve(spec.content)
-    val pages: List<PagePlan> = Fragmenter(fonts, spec.pageTemplate()).fragment(styled)
-    val bands = BandPlanner(theme, fonts).plan(spec, pages.size)
+    val laidOut = layOut(spec, styled, fonts)
+    val pages: List<PagePlan> = laidOut.map { it.first }
+    val bands = BandPlanner(theme, fonts).plan(spec, laidOut.map { it.second })
     val emitter = PlanEmitter(PdfDocumentWriter(sink), fonts, images)
     for ((index, page) in pages.withIndex()) emitter.emit(PagePlan(page.size, page.items + bands[index]))
     emitter.finish(
         fileIdentifier = fileIdentifierOf(stamp, spec.metadata, pages.size),
         info = documentInformation(spec.metadata, creationDate = stamp),
     )
+}
+
+/**
+ * The paper of one page: its size and what is kept clear around it — the
+ * document's own, or a section's.
+ */
+internal data class PageSetup(val size: Size, val margins: Insets)
+
+/**
+ * [styled] fragmented onto pages, each beside the paper it is on.
+ *
+ * The top level of the document is a sequence of flows: the blocks between two
+ * sections are fragmented onto the document's own paper, and each section onto
+ * its own, every flow starting a page of its own. A flow with nothing in it but
+ * page breaks — the blocks between two sections that follow each other, or a
+ * break written just before one — asks for no page and gets none, which is the
+ * rule a break at the top of an empty page already follows. A section with
+ * nothing in it is one blank page of its paper, as an empty document is one
+ * blank page of the document's.
+ */
+internal fun layOut(
+    spec: DocumentSpec,
+    styled: List<StyledBlock>,
+    fonts: FontCatalog,
+): List<Pair<PagePlan, PageSetup>> {
+    val document = PageSetup(spec.pageSize, spec.margins)
+    val pages = mutableListOf<Pair<PagePlan, PageSetup>>()
+    val flow = mutableListOf<StyledBlock>()
+
+    fun fragment(setup: PageSetup, align: VerticalAlign, blocks: List<StyledBlock>) {
+        val template = spec.pageTemplate(setup.size, setup.margins)
+        Fragmenter(fonts, template, align).fragment(blocks).mapTo(pages) { page -> page to setup }
+    }
+
+    fun flush() {
+        if (flow.any { block -> block !is StyledPageBreak }) fragment(document, VerticalAlign.Top, flow.toList())
+        flow.clear()
+    }
+
+    for (block in styled) {
+        if (block is StyledSection) {
+            flush()
+            fragment(PageSetup(block.pageSize, block.margins), block.verticalAlign, block.content)
+        } else {
+            flow += block
+        }
+    }
+    flush()
+    if (pages.isEmpty()) fragment(document, VerticalAlign.Top, emptyList())
+    return pages
 }
 
 /**

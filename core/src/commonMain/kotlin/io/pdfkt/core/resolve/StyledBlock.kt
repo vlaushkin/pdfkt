@@ -15,8 +15,10 @@ import io.pdfkt.core.block.TextAlign
 import io.pdfkt.core.block.VerticalAlign
 import io.pdfkt.core.block.requireRectangularTable
 import io.pdfkt.core.image.ImageRef
+import io.pdfkt.core.model.Insets
 import io.pdfkt.core.model.Pt
 import io.pdfkt.core.model.Rgb
+import io.pdfkt.core.model.Size
 
 // No clause applies: L4 is this library's own design. This is the "styled blocks; no geometry yet" the resolve
 // stage produces and the fragmenter's `planBlock(block: StyledBlock, …)` takes.
@@ -214,4 +216,21 @@ public data object StyledPageBreak : StyledBlock {
     override val spacingAfter: Pt = Pt.ZERO
     override val keepWithNext: Boolean = false
     override val keepTogether: Boolean = false
+}
+
+/**
+ * A run of pages on paper of their own, its content resolved — see
+ * `SectionBlock`. The fragmenter is what acts on it; a planner asked to place
+ * one inside a box refuses.
+ */
+public data class StyledSection(
+    public val pageSize: Size,
+    public val margins: Insets,
+    public val verticalAlign: VerticalAlign,
+    public val content: List<StyledBlock>,
+) : StyledBlock {
+    override val spacingBefore: Pt get() = Pt.ZERO
+    override val spacingAfter: Pt get() = Pt.ZERO
+    override val keepWithNext: Boolean get() = false
+    override val keepTogether: Boolean get() = false
 }

@@ -64,7 +64,7 @@ final class FacadeFidelityTests: XCTestCase {
         try assertSameBytes(
             facade: facadeDocument { Paragraph { Text("Hello, world!") } },
             raw: rawDocument { scope in
-                scope.paragraph(text: "Hello, world!", align: .left)
+                scope.paragraph(text: "Hello, world!", align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil)
             }
         )
     }
@@ -78,7 +78,7 @@ final class FacadeFidelityTests: XCTestCase {
                 }
             },
             raw: rawDocument { scope in
-                scope.paragraph(align: .left) { inline in
+                scope.paragraph(align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil) { inline in
                     inline.text(value: "Revenue: ") { style in style.bold = true }
                     inline.text(value: "up 12%")
                 }
@@ -94,7 +94,7 @@ final class FacadeFidelityTests: XCTestCase {
                 }
             },
             raw: rawDocument { scope in
-                scope.paragraph(align: .left) { inline in
+                scope.paragraph(align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil) { inline in
                     inline.text(value: "warning") { style in
                         style.color(rgb: 0xCC0000)
                         style.fontSize(points: 9)
@@ -110,7 +110,7 @@ final class FacadeFidelityTests: XCTestCase {
                 Paragraph { Text("centred") }.alignment(.center)
             },
             raw: rawDocument { scope in
-                scope.paragraph(text: "centred", align: .center)
+                scope.paragraph(text: "centred", align: .center, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil)
             }
         )
     }
@@ -125,7 +125,7 @@ final class FacadeFidelityTests: XCTestCase {
                 }
             },
             raw: rawDocument { scope in
-                scope.paragraph(align: .left) { inline in
+                scope.paragraph(align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil) { inline in
                     inline.link(href: "https://example.com") { linkScope in
                         linkScope.text(value: "here")
                     }
@@ -231,7 +231,7 @@ final class FacadeFidelityTests: XCTestCase {
                     barWidth: BlockSinkKt.DEFAULT_QUOTE_BAR_WIDTH,
                     indentLeft: BlockSinkKt.DEFAULT_QUOTE_INDENT
                 ) { quote in
-                    quote.paragraph(align: .left) { inline in inline.text(value: "quoted") }
+                    quote.paragraph(align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil) { inline in inline.text(value: "quoted") }
                 }
                 scope.hr(thickness: nil, color: nil, verticalSpacing: nil)
             }
@@ -246,9 +246,9 @@ final class FacadeFidelityTests: XCTestCase {
                 Paragraph { Text("two") }
             },
             raw: rawDocument { scope in
-                scope.paragraph(text: "one", align: .left)
+                scope.paragraph(text: "one", align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil)
                 scope.pageBreak()
-                scope.paragraph(text: "two", align: .left)
+                scope.paragraph(text: "two", align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil)
             }
         )
     }
@@ -263,7 +263,7 @@ final class FacadeFidelityTests: XCTestCase {
             raw: rawDocument { scope in
                 scope.landscape()
                 scope.margins = MarginsFixed(top: 24, right: 24, bottom: 24, left: 24)
-                scope.paragraph(text: "wide", align: .left)
+                scope.paragraph(text: "wide", align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil)
             }
         )
     }
@@ -279,16 +279,16 @@ final class FacadeFidelityTests: XCTestCase {
             },
             raw: rawDocument { scope in
                 scope.header(height: DocumentScopeKt.DEFAULT_BAND_HEIGHT, pages: .all) { colophon in
-                    colophon.paragraph(align: .left) { inline in
+                    colophon.paragraph(align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil) { inline in
                         inline.text(value: "Q1 Report") { style in style.bold = true }
                     }
                 }
                 scope.footer(height: DocumentScopeKt.DEFAULT_BAND_HEIGHT, pages: .exceptfirst) { colophon in
-                    colophon.paragraph(text: colophon.pageOfPages(separator: " / "), align: .right)
+                    colophon.paragraph(text: colophon.pageOfPages(separator: " / "), align: .right, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil)
                 }
-                scope.paragraph(text: "body", align: .left)
+                scope.paragraph(text: "body", align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil)
                 scope.pageBreak()
-                scope.paragraph(text: "more", align: .left)
+                scope.paragraph(text: "more", align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil)
             }
         )
     }
@@ -307,9 +307,102 @@ final class FacadeFidelityTests: XCTestCase {
                     creator: scope.metadata.creator,
                     producer: scope.metadata.producer
                 )
-                scope.paragraph(text: "dated", align: .left)
+                scope.paragraph(text: "dated", align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil)
             }
         )
+    }
+
+    // MARK: - Sections, themes, supplied fonts
+
+    func testAlbumSectionsWithSuppliedFont() throws {
+        let fontData = try Data(contentsOf: testFontURL)
+        let photo = headerOnlyJpeg(width: 64, height: 48)
+        let side = 595.276
+        let facade = PdfktDSL.Document(
+            theme: PdfktDSL.Theme(font: Font(data: fontData, id: "sans"), lineHeight: 1.5),
+            date: Date(timeIntervalSince1970: TimeInterval(pinnedEpochSeconds)),
+            timeZone: TimeZone(secondsFromGMT: Int(pinnedOffsetMinutes) * 60)!
+        ) {
+            Section(pageSize: .custom(width: side, height: side), margins: .all(0), verticalAlignment: .middle) {
+                Paragraph { Text("Лето").bold().fontSize(side / 20) }.alignment(.center).spacing(after: 10)
+                Paragraph { Text("Июль").fontSize(side / 35) }.alignment(.center)
+            }
+            Section(
+                pageSize: .custom(width: 64, height: 48 + 20 + 12.6),
+                margins: PdfktDSL.Margins(top: 0, right: 0, bottom: 10, left: 0)
+            ) {
+                Image(data: photo)
+                Paragraph { Text("Фото").fontSize(8.4).color(0x616161) }
+                    .alignment(.right).indent(right: 5).spacing(before: 10)
+            }
+        }
+        let raw = rawDocument { scope in
+            let family = FontFamily.companion.of(font: FontRefSupplied(bytes: fontData.toKotlinByteArray(), id: "sans"))
+            scope.theme = ObjCInteropKt.themeOf(family: family, fontSize: 11, lineHeight: 1.5, textColor: 0)
+            scope.section(
+                pageSize: PageSizeCustom(width: Float(side), height: Float(side)),
+                margins: MarginsFixed(top: 0, right: 0, bottom: 0, left: 0),
+                verticalAlign: .middle
+            ) { section in
+                ObjCInteropKt.spacedParagraph(
+                    section, align: .center, indentLeft: 0, indentRight: 0,
+                    spacingBefore: nil, spacingAfter: KotlinDouble(value: 10)
+                ) { inline in
+                    inline.text(value: "Лето") { style in
+                        style.bold = true
+                        style.fontSize(points: side / 20)
+                    }
+                }
+                ObjCInteropKt.spacedParagraph(
+                    section, align: .center, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil
+                ) { inline in
+                    inline.text(value: "Июль") { style in style.fontSize(points: side / 35) }
+                }
+            }
+            scope.section(
+                pageSize: PageSizeCustom(width: 64, height: Float(48 + 20 + 12.6)),
+                margins: MarginsFixed(top: 0, right: 0, bottom: 10, left: 0),
+                verticalAlign: .top
+            ) { section in
+                section.image(bytes: photo.toKotlinByteArray(), fit: .contain, rotationDegrees: 0)
+                ObjCInteropKt.spacedParagraph(
+                    section, align: .right, indentLeft: 0, indentRight: 5,
+                    spacingBefore: KotlinDouble(value: 10), spacingAfter: nil
+                ) { inline in
+                    inline.text(value: "Фото") { style in
+                        style.fontSize(points: 8.4)
+                        style.color(rgb: 0x616161)
+                    }
+                }
+            }
+        }
+        try assertSameBytes(facade: facade, raw: raw)
+    }
+
+    /// A JPEG of the given size that is only its headers — SOI, a baseline
+    /// SOF0 frame header, a scan header, EOI (ITU-T T.81 §B.2). The engine
+    /// embeds a JPEG as it arrived and reads nothing past the frame header, so
+    /// this is all a layout needs; no picture is committed to the repository.
+    private func headerOnlyJpeg(width: Int, height: Int) -> Data {
+        Data([
+            0xFF, 0xD8,
+            0xFF, 0xC0, 0x00, 0x11, 0x08,
+            UInt8(height >> 8), UInt8(height & 0xFF), UInt8(width >> 8), UInt8(width & 0xFF),
+            0x03, 0x01, 0x11, 0x00, 0x02, 0x11, 0x01, 0x03, 0x11, 0x01,
+            0xFF, 0xDA, 0x00, 0x08, 0x01, 0x01, 0x00, 0x00, 0x3F, 0x00,
+            0xFF, 0xD9,
+        ])
+    }
+
+    /// DejaVuSans.ttf from `PDFKT_TEST_FONT_DIR`, as the Kotlin suites find
+    /// it, or else from `test-fonts/` at the repository root.
+    private var testFontURL: URL {
+        if let dir = ProcessInfo.processInfo.environment["PDFKT_TEST_FONT_DIR"] {
+            return URL(fileURLWithPath: dir).appendingPathComponent("DejaVuSans.ttf")
+        }
+        return URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("test-fonts/DejaVuSans.ttf")
     }
 }
 

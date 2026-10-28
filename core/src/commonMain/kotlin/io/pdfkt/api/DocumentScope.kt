@@ -14,8 +14,10 @@ import io.pdfkt.core.block.ImageFit
 import io.pdfkt.core.block.InlineRun
 import io.pdfkt.core.block.PageBreakBlock
 import io.pdfkt.core.block.ParagraphBlock
+import io.pdfkt.core.block.SectionBlock
 import io.pdfkt.core.block.TextAlign
 import io.pdfkt.core.block.TextRun
+import io.pdfkt.core.block.VerticalAlign
 import io.pdfkt.core.doc.BandPages
 import io.pdfkt.core.doc.BandSpec
 import io.pdfkt.core.doc.Clock
@@ -421,15 +423,62 @@ public class DocumentScope internal constructor() : BlockSink {
      *   the loss this library forbids.
      */
     public fun image(bytes: ByteArray, fit: ImageFit = ImageFit.Contain, rotationDegrees: Int = 0) {
-        require(rotationDegrees in QUARTER_TURNS) {
-            "an image is turned by a quarter of a circle at a time — ${QUARTER_TURNS.joinToString(", ")} " +
-                "degrees, which is what an orientation is — and this one asks for $rotationDegrees. The " +
-                "engine turns an image by any angle, but it fits it to the column as though it had not " +
-                "been turned, so the corners of an image turned by anything else reach outside the " +
-                "column: say it with add(ImageBlock(imageFromBytes(id, bytes), rotation = " +
-                "$rotationDegrees.0f)) and mean it"
-        }
-        add(ImageBlock(image = imageRef(bytes), fit = fit, rotation = rotationDegrees.toFloat()))
+        add(imageBlock(bytes, fit, rotationDegrees, ::imageRef))
+    }
+
+    /**
+     * Set the pages [block] writes on paper of their own: a new page of
+     * [pageSize] with [margins], as many more of the same as the content needs,
+     * and after the section the document's own paper again.
+     *
+     * ```kotlin
+     * section(PageSize.Custom(595.276.pt, 595.276.pt), verticalAlign = VerticalAlign.Middle) {
+     *     paragraph("Лето 2026", align = TextAlign.Center)
+     * }
+     * for (photo in photos) {
+     *     section(PageSize.Custom(photo.width, photo.height), margins = Margins.Fixed(0.pt, 0.pt, 0.pt, 0.pt)) {
+     *         image(photo.bytes)
+     *     }
+     * }
+     * ```
+     *
+     * This is how one document carries pages of different sizes — a square
+     * cover, then every photograph on a sheet of its own proportions; a report
+     * with one landscape table in it. The [pageSize] and [margins] of the
+     * document are not changed by it: they are what the blocks outside every
+     * section are set on, and what a section that does not say otherwise takes.
+     *
+     * A section always starts a page and the blocks after it always start
+     * another, so a [pageBreak] next to one asks for nothing more and adds no
+     * blank page. A section with nothing in it is one blank page of its paper.
+     * The document's header and footer are drawn on its pages too, in strips
+     * cut from that page's own size and margins.
+     *
+     * @param pageSize the paper of the section's pages.
+     * @param margins what is kept clear around their content. Zero on all four
+     *   sides is a page the content reaches the edges of — a photograph at full
+     *   bleed.
+     * @param verticalAlign where a page's content sits when it does not fill
+     *   the page: [VerticalAlign.Middle] centres a title page top to bottom, and
+     *   each page of a section that runs onto several is aligned on its own.
+     * @throws IllegalArgumentException when the document is built, if the
+     *   margins and bands leave no room on the section's paper.
+     */
+    public fun section(
+        pageSize: PageSize = this.pageSize,
+        margins: Margins = this.margins,
+        verticalAlign: VerticalAlign = VerticalAlign.Top,
+        block: SectionScope.() -> Unit,
+    ) {
+        val content = SectionScope(::imageRef).apply(block).build()
+        add(
+            SectionBlock(
+                pageSize = pageSize.toSize(),
+                margins = margins.toInsets(),
+                verticalAlign = verticalAlign,
+                content = content,
+            ),
+        )
     }
 
     /**
@@ -532,6 +581,31 @@ public val DEFAULT_BAND_HEIGHT: Pt = 28.pt
 
 /** The page a document's first page is, counted as a reader counts. */
 private const val FIRST_PAGE: Int = 1
+
+/**
+ * The block of the picture in [bytes] drawn with [fit], turned by
+ * [rotationDegrees] — what [DocumentScope.image] and [SectionScope.image] both
+ * add. The turn is checked before [imageRef] reads the bytes, so a picture that
+ * is refused is not first registered with the document.
+ *
+ * @throws IllegalArgumentException if [rotationDegrees] is not a quarter turn.
+ */
+internal fun imageBlock(
+    bytes: ByteArray,
+    fit: ImageFit,
+    rotationDegrees: Int,
+    imageRef: (ByteArray) -> ImageRef,
+): ImageBlock {
+    require(rotationDegrees in QUARTER_TURNS) {
+        "an image is turned by a quarter of a circle at a time — ${QUARTER_TURNS.joinToString(", ")} " +
+            "degrees, which is what an orientation is — and this one asks for $rotationDegrees. The " +
+            "engine turns an image by any angle, but it fits it to the column as though it had not " +
+            "been turned, so the corners of an image turned by anything else reach outside the " +
+            "column: say it with add(ImageBlock(imageFromBytes(id, bytes), rotation = " +
+            "$rotationDegrees.0f)) and mean it"
+    }
+    return ImageBlock(image = imageRef(bytes), fit = fit, rotation = rotationDegrees.toFloat())
+}
 
 /**
  * What a picture is called within the document, before its number — the

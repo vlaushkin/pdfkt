@@ -20,6 +20,7 @@ import io.pdfkt.core.block.LinkRun
 import io.pdfkt.core.block.ListBlock
 import io.pdfkt.core.block.PageBreakBlock
 import io.pdfkt.core.block.ParagraphBlock
+import io.pdfkt.core.block.SectionBlock
 import io.pdfkt.core.block.StyledRun
 import io.pdfkt.core.block.TableBlock
 import io.pdfkt.core.block.TableCell
@@ -188,6 +189,13 @@ public class Resolver(private val theme: Theme, private val fonts: FontCatalog) 
         )
 
         is PageBreakBlock -> StyledPageBreak
+
+        is SectionBlock -> StyledSection(
+            pageSize = block.pageSize,
+            margins = block.margins,
+            verticalAlign = block.verticalAlign,
+            content = block.content.map { resolveBlock(it, base) },
+        )
     }
 
     /**

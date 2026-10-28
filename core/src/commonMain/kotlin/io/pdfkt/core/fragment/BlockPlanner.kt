@@ -27,6 +27,7 @@ import io.pdfkt.core.resolve.StyledPageBreak
 import io.pdfkt.core.resolve.StyledParagraph
 import io.pdfkt.core.resolve.StyledQuote
 import io.pdfkt.core.resolve.StyledRule
+import io.pdfkt.core.resolve.StyledSection
 import io.pdfkt.core.resolve.StyledTable
 import io.pdfkt.core.resolve.StyledTextRun
 
@@ -111,6 +112,16 @@ public class BlockPlanner(private val fonts: FontCatalog) {
             // dispatch, and a caller who asks anyway is told the truth: it takes no
             // space at all.
             is StyledPageBreak -> FitResult.Fits(emptyList(), Pt.ZERO)
+
+            // A section chooses the paper of the pages it is on, and a box being
+            // planned is already on a page whose paper was chosen. The document's
+            // top level is the one place that can honour it, and the renderer
+            // takes it from there before any planner sees it.
+            is StyledSection -> throw IllegalArgumentException(
+                "a section is a run of pages on paper of its own, and it belongs at the top level of " +
+                    "a document: one inside a list item, a quotation, a table cell or another section " +
+                    "would be planned into a box on a page whose size is already decided",
+            )
         }
 
     /**

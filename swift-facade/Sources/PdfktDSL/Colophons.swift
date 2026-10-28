@@ -61,7 +61,7 @@ public enum ColophonBuilder {
 
     public static func buildExpression(_ paragraph: Paragraph) -> ColophonBlock {
         ColophonBlock { scope in
-            scope.paragraph(align: paragraph.align.kotlin, block: paragraph.applyToInline)
+            paragraph.apply(to: scope)
         }
     }
 
@@ -69,7 +69,11 @@ public enum ColophonBuilder {
         ColophonBlock { scope in
             scope.paragraph(
                 text: scope.pageOfPages(separator: pageOfPages.separator),
-                align: pageOfPages.align.kotlin
+                align: pageOfPages.align.kotlin,
+                indentLeft: 0,
+                indentRight: 0,
+                spacingBefore: nil,
+                spacingAfter: nil
             )
         }
     }

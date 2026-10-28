@@ -180,7 +180,7 @@ class BandPlanTest {
     // ------------------------------------------------------------- the fixture
 
     private fun plan(spec: DocumentSpec, pages: Int): List<List<PlacedItem>> =
-        BandPlanner(Theme.Default, FontCatalog()).plan(spec, pages)
+        BandPlanner(Theme.Default, FontCatalog()).plan(spec, List(pages) { PageSetup(spec.pageSize, spec.margins) })
 
     /** What a page's bands say, as one string per page. */
     private fun textOf(items: List<PlacedItem>): String = items

@@ -67,20 +67,21 @@ internal class BandPlanner(theme: Theme, fonts: FontCatalog) {
      * the header and then the footer of page `i + 1`, already in page
      * coordinates, and is empty for a page [BandPages] draws neither on.
      *
-     * @param pages how many pages the content was fragmented onto — the `of 12`
-     *   of every band on every page.
+     * @param pages the paper of each page the content was fragmented onto, in
+     *   order: how many there are is the `of 12` of every band on every page,
+     *   and each page's strips are cut from its own size and margins.
      * @throws BandOverflowException if any page's band is taller than its strip.
      *   The whole document is planned before anything is returned, so a footer
      *   that only overflows once the page count reaches three digits is found
      *   before the file is written rather than while it is.
      */
-    fun plan(spec: DocumentSpec, pages: Int): List<List<PlacedItem>> {
-        if (spec.header == null && spec.footer == null) return List(pages) { emptyList() }
-        val probe = spec.printableArea.height
-        return (1..pages).map { page ->
-            val numbering = PageNumbering(page, pages)
-            planBand(spec.header, spec.headerArea, BandPosition.Header, numbering, probe) +
-                planBand(spec.footer, spec.footerArea, BandPosition.Footer, numbering, probe)
+    fun plan(spec: DocumentSpec, pages: List<PageSetup>): List<List<PlacedItem>> {
+        if (spec.header == null && spec.footer == null) return List(pages.size) { emptyList() }
+        return pages.mapIndexed { index, setup ->
+            val numbering = PageNumbering(index + 1, pages.size)
+            val probe = spec.printableArea(setup.size, setup.margins).height
+            planBand(spec.header, spec.headerArea(setup.size, setup.margins), BandPosition.Header, numbering, probe) +
+                planBand(spec.footer, spec.footerArea(setup.size, setup.margins), BandPosition.Footer, numbering, probe)
         }
     }
 

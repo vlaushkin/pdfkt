@@ -24,6 +24,7 @@ public struct Document {
         pageSize: PageSize = .a4,
         landscape: Bool = false,
         margins: Margins? = nil,
+        theme: Theme? = nil,
         metadata: Metadata? = nil,
         date: Date = Date(),
         timeZone: TimeZone = .current,
@@ -35,6 +36,7 @@ public struct Document {
             scope.pageSize = pageSize.kotlin
             if landscape { scope.landscape() }
             if let margins { scope.margins = margins.kotlin }
+            if let theme { scope.theme = theme.kotlin }
             if let metadata { metadata.apply(to: scope) }
             for block in blocks { block.apply(scope) }
         }
@@ -92,7 +94,7 @@ public enum DocumentBuilder {
     public static func buildArray(_ components: [[DocumentBlock]]) -> [DocumentBlock] { components.flatMap { $0 } }
 
     public static func buildExpression(_ paragraph: Paragraph) -> DocumentBlock {
-        DocumentBlock { scope in scope.paragraph(align: paragraph.align.kotlin, block: paragraph.applyToInline) }
+        DocumentBlock { scope in paragraph.apply(to: scope) }
     }
 
     public static func buildExpression(_ heading: Heading) -> DocumentBlock {
@@ -159,6 +161,10 @@ public enum DocumentBuilder {
                 rotationDegrees: Int32(image.rotationDegrees)
             )
         }
+    }
+
+    public static func buildExpression(_ section: Section) -> DocumentBlock {
+        DocumentBlock { scope in section.apply(to: scope) }
     }
 
     public static func buildExpression(_ pageBreak: PageBreak) -> DocumentBlock {
