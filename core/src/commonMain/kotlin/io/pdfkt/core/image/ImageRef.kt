@@ -13,6 +13,7 @@ import io.pdfkt.core.obj.PdfInt
 import io.pdfkt.core.obj.PdfName
 import io.pdfkt.core.obj.PdfObject
 import io.pdfkt.core.obj.PdfString
+import io.pdfkt.core.obj.StreamBody
 
 // ISO 32000-2:2020 §8.9.3 "Sample representation",
 // §8.9.5.1 "Image dictionaries — General" (Table 87),
@@ -59,16 +60,27 @@ import io.pdfkt.core.obj.PdfString
  *   have no associated soft mask". A mask is an image like any other, which is
  *   why it is one of these, restricted by Table 143.
  */
-public class ImageRef(
+public class ImageRef internal constructor(
     public val id: String,
     public val width: Int,
     public val height: Int,
     public val colorSpace: ImageColorSpace,
-    internal val data: ByteArray,
-    public val bitsPerComponent: Int = BITS_PER_BYTE,
-    public val filter: ImageFilter? = null,
-    public val softMask: ImageRef? = null,
+    internal val samples: StreamBody,
+    public val bitsPerComponent: Int,
+    public val filter: ImageFilter?,
+    public val softMask: ImageRef?,
 ) {
+    public constructor(
+        id: String,
+        width: Int,
+        height: Int,
+        colorSpace: ImageColorSpace,
+        data: ByteArray,
+        bitsPerComponent: Int = BITS_PER_BYTE,
+        filter: ImageFilter? = null,
+        softMask: ImageRef? = null,
+    ) : this(id, width, height, colorSpace, StreamBody.Bytes(data), bitsPerComponent, filter, softMask)
+
     init {
         require(id.isNotEmpty()) {
             "an image needs an id: it is what names it within one document and what its resolution " +
@@ -92,10 +104,10 @@ public class ImageRef(
                 "greater than 255, which is the integer required to index a table with 8-bit index " +
                 "values\" (ISO 32000-2:2020 §8.6.6.3)"
         }
-        require(data.isNotEmpty()) {
+        require(samples.length > 0) {
             "the image \"$id\" arrived with no sample data (ISO 32000-2:2020 §8.9.3)"
         }
-        if (filter == null) require(data.size >= unfilteredSize()) { tooFewSamples() }
+        if (filter == null) require(samples.length >= unfilteredSize()) { tooFewSamples() }
         if (softMask != null) requireSoftMaskOfTable143(softMask)
     }
 
@@ -139,7 +151,7 @@ public class ImageRef(
     }
 
     private fun tooFewSamples(): String =
-        "the image \"$id\" carries ${data.size} bytes of samples where $width x $height in " +
+        "the image \"$id\" carries ${samples.length} bytes of samples where $width x $height in " +
             "$colorSpace at $bitsPerComponent bits per component needs " +
             "${unfilteredSize()} — each row begins on a byte boundary and is padded to it " +
             "(ISO 32000-2:2020 §8.9.3)"

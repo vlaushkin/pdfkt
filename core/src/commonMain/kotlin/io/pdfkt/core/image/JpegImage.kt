@@ -8,6 +8,8 @@
  */
 package io.pdfkt.core.image
 
+import io.pdfkt.core.obj.StreamBody
+
 // ISO 32000-2:2020 §7.4.8 "DCTDecode filter" (Table 13),
 // §8.9.5.1 "Image dictionaries — General" (Table 87)
 // ITU-T T.81 (09/92) | ISO/IEC 10918-1 §B.2.2 "Frame header syntax"
@@ -46,8 +48,11 @@ package io.pdfkt.core.image
  *   embed — a frame DCTDecode is not required to decode, a component count no
  *   device colour space has, or samples of a precision other than 8 bits.
  */
-public fun jpegImage(id: String, bytes: ByteArray): ImageRef {
-    val header = JpegHeader.parse(bytes)
+public fun jpegImage(id: String, bytes: ByteArray): ImageRef =
+    jpegImage(id, JpegHeader.parse(bytes), StreamBody.Bytes(bytes))
+
+/** The JPEG whose frame header is [header] and whose file is [data], as [jpegImage] describes it. */
+internal fun jpegImage(id: String, header: JpegHeader, data: StreamBody): ImageRef {
     require(header.bitsPerComponent == DCT_DECODE_SAMPLE_BITS) {
         "the JPEG \"$id\" encodes ${header.bitsPerComponent}-bit samples, and an image whose stream " +
             "uses DCTDecode is written with BitsPerComponent 8: \"the value of BitsPerComponent shall " +
@@ -60,9 +65,10 @@ public fun jpegImage(id: String, bytes: ByteArray): ImageRef {
         width = header.width,
         height = header.height,
         colorSpace = header.colourSpace.deviceColorSpace(),
-        data = bytes,
+        samples = data,
         bitsPerComponent = header.bitsPerComponent,
         filter = ImageFilter.DCT_DECODE,
+        softMask = null,
     )
 }
 

@@ -108,6 +108,7 @@ public final class io/pdfkt/api/DocumentKt {
 	public static final fun richDocument (Lkotlin/jvm/functions/Function1;)Lio/pdfkt/api/Document;
 	public static final fun toByteArray (Lio/pdfkt/api/Document;)[B
 	public static final fun writeTo (Lio/pdfkt/api/Document;Lkotlinx/io/Sink;)V
+	public static final fun writeTo (Lio/pdfkt/api/Document;Lkotlinx/io/files/Path;)V
 }
 
 public final class io/pdfkt/api/DocumentScope : io/pdfkt/api/BlockSink {
@@ -141,7 +142,9 @@ public final class io/pdfkt/api/DocumentScope : io/pdfkt/api/BlockSink {
 	public fun heading (ILjava/lang/String;)V
 	public fun heading (ILkotlin/jvm/functions/Function1;)V
 	public fun hr-kjmY71A (Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Rgb;Lio/pdfkt/core/model/Pt;)V
+	public final fun image (Lkotlinx/io/files/Path;Lio/pdfkt/core/block/ImageFit;I)V
 	public final fun image ([BLio/pdfkt/core/block/ImageFit;I)V
+	public static synthetic fun image$default (Lio/pdfkt/api/DocumentScope;Lkotlinx/io/files/Path;Lio/pdfkt/core/block/ImageFit;IILjava/lang/Object;)V
 	public static synthetic fun image$default (Lio/pdfkt/api/DocumentScope;[BLio/pdfkt/core/block/ImageFit;IILjava/lang/Object;)V
 	public final fun landscape ()V
 	public fun numberedList-dNaHhV0 (ILio/pdfkt/core/block/ListMarkerStyle;FLkotlin/jvm/functions/Function1;)V
@@ -291,8 +294,11 @@ public final class io/pdfkt/api/Margins$Fixed : io/pdfkt/api/Margins {
 public final class io/pdfkt/api/ObjCInteropKt {
 	public static final fun color (Lio/pdfkt/api/InlineStyleScope;I)V
 	public static final fun fontSize (Lio/pdfkt/api/InlineStyleScope;D)V
+	public static final fun imageFile (Lio/pdfkt/api/DocumentScope;Ljava/lang/String;Lio/pdfkt/core/block/ImageFit;I)V
+	public static final fun imageFile (Lio/pdfkt/api/SectionScope;Ljava/lang/String;Lio/pdfkt/core/block/ImageFit;I)V
 	public static final fun spacedParagraph (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/block/TextAlign;DDLjava/lang/Double;Ljava/lang/Double;Lkotlin/jvm/functions/Function1;)V
 	public static final fun themeOf (Lio/pdfkt/core/style/FontFamily;DDI)Lio/pdfkt/core/style/Theme;
+	public static final fun writeToFile (Lio/pdfkt/api/Document;Ljava/lang/String;)V
 }
 
 public abstract interface class io/pdfkt/api/PageSize {
@@ -364,7 +370,9 @@ public final class io/pdfkt/api/SectionScope : io/pdfkt/api/BlockSink {
 	public fun heading (ILjava/lang/String;)V
 	public fun heading (ILkotlin/jvm/functions/Function1;)V
 	public fun hr-kjmY71A (Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Rgb;Lio/pdfkt/core/model/Pt;)V
+	public final fun image (Lkotlinx/io/files/Path;Lio/pdfkt/core/block/ImageFit;I)V
 	public final fun image ([BLio/pdfkt/core/block/ImageFit;I)V
+	public static synthetic fun image$default (Lio/pdfkt/api/SectionScope;Lkotlinx/io/files/Path;Lio/pdfkt/core/block/ImageFit;IILjava/lang/Object;)V
 	public static synthetic fun image$default (Lio/pdfkt/api/SectionScope;[BLio/pdfkt/core/block/ImageFit;IILjava/lang/Object;)V
 	public fun numberedList-dNaHhV0 (ILio/pdfkt/core/block/ListMarkerStyle;FLkotlin/jvm/functions/Function1;)V
 	public final fun pageBreak ()V
@@ -1317,6 +1325,7 @@ public final class io/pdfkt/core/fragment/UnplaceableBlockException : java/lang/
 
 public final class io/pdfkt/core/image/ImageBytesKt {
 	public static final fun imageFromBytes (Ljava/lang/String;[B)Lio/pdfkt/core/image/ImageRef;
+	public static final fun imageFromFile (Ljava/lang/String;Lkotlinx/io/files/Path;)Lio/pdfkt/core/image/ImageRef;
 }
 
 public final class io/pdfkt/core/image/ImageCatalog {

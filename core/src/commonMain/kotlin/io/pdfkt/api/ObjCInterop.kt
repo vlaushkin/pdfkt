@@ -8,6 +8,9 @@
  */
 package io.pdfkt.api
 
+import io.pdfkt.core.block.ImageFit
+import kotlinx.io.files.Path
+
 // No clause applies: interop sugar is this library's own design.
 
 /**
@@ -70,3 +73,26 @@ public fun themeOf(family: FontFamily, fontSize: Double, lineHeight: Double, tex
     textColor = Rgb.of(textColor),
     headingFamilies = (HeadingBlock.MIN_LEVEL..HeadingBlock.MAX_LEVEL).associateWith { family },
 )
+
+/**
+ * [DocumentScope.image] from the file at [path], for a caller on the
+ * Objective-C bridge, which has no `kotlinx.io.files.Path` to hand over: a JPEG
+ * is copied into the PDF when the document is written, and not held until then.
+ */
+public fun DocumentScope.imageFile(path: String, fit: ImageFit, rotationDegrees: Int) {
+    image(Path(path), fit, rotationDegrees)
+}
+
+/** [SectionScope.image] from the file at [path], for the same caller. */
+public fun SectionScope.imageFile(path: String, fit: ImageFit, rotationDegrees: Int) {
+    image(Path(path), fit, rotationDegrees)
+}
+
+/**
+ * [Document.writeTo] the file at [path], for the same caller: the PDF goes to
+ * the file as it is rendered, and never whole through a `Data`.
+ */
+@Throws(Exception::class)
+public fun Document.writeToFile(path: String) {
+    writeTo(Path(path))
+}

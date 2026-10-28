@@ -134,11 +134,12 @@ public enum SectionBuilder {
 
     public static func buildExpression(_ image: Image) -> SectionBlock {
         SectionBlock { scope in
-            scope.image(
-                bytes: image.data.toKotlinByteArray(),
-                fit: image.fit.kotlin,
-                rotationDegrees: Int32(image.rotationDegrees)
-            )
+            switch image.source {
+            case .data(let data):
+                scope.image(bytes: data.toKotlinByteArray(), fit: image.fit.kotlin, rotationDegrees: Int32(image.rotationDegrees))
+            case .file(let path):
+                scope.imageFile(path: path, fit: image.fit.kotlin, rotationDegrees: Int32(image.rotationDegrees))
+            }
         }
     }
 

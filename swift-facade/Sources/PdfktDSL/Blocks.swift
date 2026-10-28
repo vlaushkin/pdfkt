@@ -74,12 +74,29 @@ public struct HorizontalRule {
 
 /// A picture in the flow; the bytes decide the format (JPEG or PNG).
 public struct Image {
-    internal let data: Data
+    internal enum Source {
+        case data(Data)
+        case file(String)
+    }
+
+    internal let source: Source
     internal var fit: ImageFitMode = .contain
     internal var rotationDegrees: Int = 0
 
     public init(data: Data) {
-        self.data = data
+        self.source = .data(data)
+    }
+
+    /// The picture in the file at `url`. A JPEG is not held: its header is read
+    /// when the document is built, and the file is copied into the PDF when it
+    /// is written — so the file must stay as it is until then.
+    public init(url: URL) {
+        self.source = .file(url.path)
+    }
+
+    /// The picture in the file at `path`, as `init(url:)`.
+    public init(path: String) {
+        self.source = .file(path)
     }
 
     public func fit(_ mode: ImageFitMode) -> Image {

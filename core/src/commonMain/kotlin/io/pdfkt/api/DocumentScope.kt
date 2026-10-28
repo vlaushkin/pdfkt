@@ -25,9 +25,11 @@ import io.pdfkt.core.doc.Metadata
 import io.pdfkt.core.doc.PageNumbering
 import io.pdfkt.core.image.ImageRef
 import io.pdfkt.core.image.imageFromBytes
+import io.pdfkt.core.image.imageFromFile
 import io.pdfkt.core.model.Pt
 import io.pdfkt.core.model.Rgb
 import io.pdfkt.core.style.Theme
+import kotlinx.io.files.Path
 
 // No clause applies: the DSL is this library's own design. Everything below the seam — pagination,
 // fonts, content streams, the file
@@ -75,9 +77,9 @@ public class DocumentScope internal constructor() : BlockSink {
 
     /**
      * The pictures this document draws, in the order they first appeared, each
-     * beside the array it was read from — see [imageRef].
+     * beside the array or the path it was read from — see [imageRef].
      */
-    private val images = mutableListOf<Pair<ByteArray, ImageRef>>()
+    private val images = mutableListOf<Pair<Any, ImageRef>>()
 
     /** The paper. */
     public var pageSize: PageSize = PageSize.A4
@@ -423,7 +425,23 @@ public class DocumentScope internal constructor() : BlockSink {
      *   the loss this library forbids.
      */
     public fun image(bytes: ByteArray, fit: ImageFit = ImageFit.Contain, rotationDegrees: Int = 0) {
-        add(imageBlock(bytes, fit, rotationDegrees, ::imageRef))
+        add(imageBlock(fit, rotationDegrees) { imageRef(bytes) })
+    }
+
+    /**
+     * Put the picture in the file at [path] here, on the terms of the [image]
+     * that takes bytes — with the difference that a JPEG is not held: its frame
+     * header is read now, for its size, and the file is copied into the PDF when
+     * the document is written. This is the form for a document of many large
+     * photographs; the files must stay as they are until it has been written.
+     *
+     * The same path added twice is one image in the file.
+     *
+     * @throws IllegalArgumentException as the other [image] does, and if there
+     *   is no file at [path].
+     */
+    public fun image(path: Path, fit: ImageFit = ImageFit.Contain, rotationDegrees: Int = 0) {
+        add(imageBlock(fit, rotationDegrees) { imageRef(path) })
     }
 
     /**
@@ -470,7 +488,7 @@ public class DocumentScope internal constructor() : BlockSink {
         verticalAlign: VerticalAlign = VerticalAlign.Top,
         block: SectionScope.() -> Unit,
     ) {
-        val content = SectionScope(::imageRef).apply(block).build()
+        val content = SectionScope(::imageRef, ::imageRef).apply(block).build()
         add(
             SectionBlock(
                 pageSize = pageSize.toSize(),
@@ -497,6 +515,16 @@ public class DocumentScope internal constructor() : BlockSink {
         }
         val ref = imageFromBytes("$IMAGE_ID_PREFIX${images.size + 1}", bytes)
         images += bytes to ref
+        return ref
+    }
+
+    /** The document's reference to the file at [path], as [imageRef] is to an array — by path. */
+    private fun imageRef(path: Path): ImageRef {
+        for ((source, ref) in images) {
+            if (source == path) return ref
+        }
+        val ref = imageFromFile("$IMAGE_ID_PREFIX${images.size + 1}", path)
+        images += path to ref
         return ref
     }
 
@@ -583,19 +611,14 @@ public val DEFAULT_BAND_HEIGHT: Pt = 28.pt
 private const val FIRST_PAGE: Int = 1
 
 /**
- * The block of the picture in [bytes] drawn with [fit], turned by
+ * The block of the picture [imageRef] reads, drawn with [fit], turned by
  * [rotationDegrees] — what [DocumentScope.image] and [SectionScope.image] both
  * add. The turn is checked before [imageRef] reads the bytes, so a picture that
  * is refused is not first registered with the document.
  *
  * @throws IllegalArgumentException if [rotationDegrees] is not a quarter turn.
  */
-internal fun imageBlock(
-    bytes: ByteArray,
-    fit: ImageFit,
-    rotationDegrees: Int,
-    imageRef: (ByteArray) -> ImageRef,
-): ImageBlock {
+internal fun imageBlock(fit: ImageFit, rotationDegrees: Int, imageRef: () -> ImageRef): ImageBlock {
     require(rotationDegrees in QUARTER_TURNS) {
         "an image is turned by a quarter of a circle at a time — ${QUARTER_TURNS.joinToString(", ")} " +
             "degrees, which is what an orientation is — and this one asks for $rotationDegrees. The " +
@@ -604,7 +627,7 @@ internal fun imageBlock(
             "column: say it with add(ImageBlock(imageFromBytes(id, bytes), rotation = " +
             "$rotationDegrees.0f)) and mean it"
     }
-    return ImageBlock(image = imageRef(bytes), fit = fit, rotation = rotationDegrees.toFloat())
+    return ImageBlock(image = imageRef(), fit = fit, rotation = rotationDegrees.toFloat())
 }
 
 /**

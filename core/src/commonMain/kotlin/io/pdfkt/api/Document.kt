@@ -17,6 +17,9 @@ import io.pdfkt.core.doc.render
 import io.pdfkt.core.style.Theme
 import kotlinx.io.Buffer
 import kotlinx.io.Sink
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
 import kotlinx.io.readByteArray
 
 // No clause applies to the entry point itself: which shape a caller writes a
@@ -183,4 +186,19 @@ public fun Document.toByteArray(): ByteArray {
 public fun Document.writeTo(sink: Sink) {
     require(blocks.isNotEmpty()) { "a document with no blocks has nothing to set on its first page" }
     render(toDocumentSpec(), theme, sink)
+}
+
+/**
+ * Render this document into the file at [path], creating it or replacing what
+ * is there.
+ *
+ * The file is written as it is rendered, object by object, so the whole PDF is
+ * never in memory — with pictures added by path, a document of any number of
+ * photographs is written in the memory of the largest one's page.
+ *
+ * @throws IllegalArgumentException as [writeTo] does.
+ */
+@Throws(Exception::class)
+public fun Document.writeTo(path: Path) {
+    SystemFileSystem.sink(path).buffered().use { writeTo(it) }
 }

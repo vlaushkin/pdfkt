@@ -49,9 +49,10 @@ public struct Document {
         try kotlin.toNSData()
     }
 
-    /// Render and write to `url`, overwriting any existing file.
+    /// Render and write to `url`, overwriting any existing file. The PDF goes to
+    /// the file as it is rendered and is never held whole in memory.
     public func write(to url: URL) throws {
-        try toData().write(to: url)
+        try kotlin.writeToFile(path: url.path)
     }
 }
 
@@ -154,11 +155,12 @@ public enum DocumentBuilder {
 
     public static func buildExpression(_ image: Image) -> DocumentBlock {
         DocumentBlock { scope in
-            scope.image(
-                bytes: image.data.toKotlinByteArray(),
-                fit: image.fit.kotlin,
-                rotationDegrees: Int32(image.rotationDegrees)
-            )
+            switch image.source {
+            case .data(let data):
+                scope.image(bytes: data.toKotlinByteArray(), fit: image.fit.kotlin, rotationDegrees: Int32(image.rotationDegrees))
+            case .file(let path):
+                scope.imageFile(path: path, fit: image.fit.kotlin, rotationDegrees: Int32(image.rotationDegrees))
+            }
         }
     }
 

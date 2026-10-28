@@ -16,7 +16,7 @@ repositories {
     maven("https://jitpack.io")
 }
 dependencies {
-    implementation("com.github.vlaushkin.pdfkt:pdfkt-core:0.0.3")
+    implementation("com.github.vlaushkin.pdfkt:pdfkt-core:0.0.4")
 }
 ```
 
@@ -111,6 +111,13 @@ val album = document {
     }
 }
 ```
+
+For an album of many large photographs, add them by path —
+`image(Path(file.path))`, `Image(url:)` in Swift — and write the document to
+a file with `writeTo(Path(...))` or `write(to:)`. A JPEG added that way is
+held only as its frame header: the file is copied into the PDF when the
+document is written, so thirty 20 MB photographs need the memory of none
+of them. The files must not change until then.
 
 A `pageBreak()` next to a section adds no blank page; the document's header
 and footer are drawn on a section's pages too, in strips cut from that page.

@@ -8,6 +8,12 @@
  */
 package io.pdfkt.core.image
 
+import io.pdfkt.core.obj.StreamBody
+import kotlinx.io.buffered
+import kotlinx.io.files.Path
+import kotlinx.io.files.SystemFileSystem
+import kotlinx.io.readByteArray
+
 // ISO 32000-2:2020 §7.4.8 "DCTDecode filter", §7.4.4 "LZWDecode and FlateDecode
 // filters", §8.9.5.1 "Image dictionaries — General" (Table 87)
 // ITU-T T.81 (09/92) | ISO/IEC 10918-1 §B.1.1.3 "Marker assignments" (Table B.1),
@@ -82,3 +88,74 @@ private val JPEG_SOI: ByteArray = byteArrayOf(JpegMarker.FILL.toByte(), JpegMark
 private const val REPORTED_BYTES: Int = 4
 
 private const val BYTE_MASK: Int = 0xFF
+
+/**
+ * An image from the file at [path], its format read off its first bytes as
+ * [imageFromBytes] reads them — with the difference that matters for a document
+ * of many photographs: a JPEG is not held.
+ *
+ * Its frame header is read now, because the layout needs its size; the file
+ * itself is opened again when the image is written, copied into the PDF and let
+ * go. A document of thirty 20 MB photographs then needs the memory of none of
+ * them, and the file must stay as it is until the document has been written.
+ *
+ * A PNG is read whole and decoded here, as [imageFromBytes] decodes one: its
+ * samples are not the file's bytes, so there is nothing to copy through later.
+ *
+ * @throws IllegalArgumentException as [imageFromBytes] does, and if there is no
+ *   file at [path].
+ */
+public fun imageFromFile(id: String, path: Path): ImageRef {
+    val size = requireNotNull(SystemFileSystem.metadataOrNull(path)?.takeIf { it.isRegularFile }) {
+        "the image \"$id\" is to be read from $path, and there is no file there"
+    }.size
+    val head = readPrefix(path, minOf(size, PNG_SIGNATURE.size.toLong()).toInt())
+    return when {
+        head.startsWith(PNG_SIGNATURE) -> pngImage(id, readPrefix(path, size.toInt()))
+        head.startsWith(JPEG_SOI) -> jpegFile(id, path, size)
+        else -> imageFromBytes(id, head)
+    }
+}
+
+/**
+ * The JPEG at [path], [size] bytes long, described by a frame header read from
+ * as much of the start of the file as it takes to reach the first scan: a
+ * prefix that grows until [JpegHeader.parse] stops running out of segments, or
+ * until it is the whole file and whatever it says is the answer.
+ */
+private fun jpegFile(id: String, path: Path, size: Long): ImageRef {
+    var prefix = minOf(size, JPEG_HEADER_GUESS)
+    while (true) {
+        val bytes = readPrefix(path, prefix.toInt())
+        val header = if (prefix == size) {
+            JpegHeader.parse(bytes)
+        } else {
+            try {
+                JpegHeader.parse(bytes)
+            } catch (_: IllegalArgumentException) {
+                null
+            }
+        }
+        if (header != null) {
+            return jpegImage(
+                id,
+                header,
+                StreamBody.Opened(size, key = path.toString()) {
+                    SystemFileSystem.source(path)
+                },
+            )
+        }
+        prefix = minOf(size, prefix * 2)
+    }
+}
+
+/** The first [count] bytes of the file at [path]. */
+private fun readPrefix(path: Path, count: Int): ByteArray =
+    SystemFileSystem.source(path).buffered().use { it.readByteArray(count) }
+
+/**
+ * How much of a JPEG is read first in search of its frame header: enough for a
+ * camera's APP1 of Exif data, which is at most one segment of 64 KB, and the
+ * tables after it.
+ */
+private const val JPEG_HEADER_GUESS: Long = 128L * 1024

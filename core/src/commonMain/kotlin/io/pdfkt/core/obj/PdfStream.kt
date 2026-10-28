@@ -8,7 +8,10 @@
  */
 package io.pdfkt.core.obj
 
+import kotlinx.io.Buffer
+import kotlinx.io.RawSource
 import kotlinx.io.Sink
+import kotlinx.io.readByteArray
 
 // ISO 32000-2:2020 §7.3.8 "Stream objects"
 
@@ -42,7 +45,16 @@ import kotlinx.io.Sink
  *   rather than a decision, so it is computed here and not accepted from a
  *   caller who could get it wrong.
  */
-public class PdfStream(dict: PdfDict, public val data: ByteArray) : PdfObject {
+public class PdfStream internal constructor(dict: PdfDict, internal val body: StreamBody) : PdfObject {
+    public constructor(dict: PdfDict, data: ByteArray) : this(dict, StreamBody.Bytes(data))
+
+    /**
+     * The bytes between the keywords. For a stream whose data are read from a
+     * file when it is written, this reads the file whole — the writer does not
+     * ask for it, and copies the file through instead.
+     */
+    public val data: ByteArray get() = body.bytes()
+
     /** The entries the caller declared: the stream dictionary less `/Length`. */
     private val declared: Map<PdfName, PdfObject> = dict.entries
 
@@ -63,7 +75,7 @@ public class PdfStream(dict: PdfDict, public val data: ByteArray) : PdfObject {
      * unordered" (§7.3.7).
      */
     public val dict: PdfDict
-        get() = PdfDict(mapOf(LENGTH to PdfInt(data.size.toLong())) + declared)
+        get() = PdfDict(mapOf(LENGTH to PdfInt(body.length)) + declared)
 }
 
 /**
@@ -115,7 +127,7 @@ internal fun Sink.writePdfStream(obj: PdfStream) {
     writeByte(LINE_FEED)
     write(STREAM_KEYWORD, 0, STREAM_KEYWORD.size)
     writeByte(LINE_FEED)
-    write(obj.data, 0, obj.data.size)
+    obj.body.writeTo(this)
     writeByte(LINE_FEED)
     write(ENDSTREAM_KEYWORD, 0, ENDSTREAM_KEYWORD.size)
 }
@@ -129,3 +141,75 @@ private val ENDSTREAM_KEYWORD =
 
 /** LINE FEED (0Ah), Table 1 of §7.2.3 — an end-of-line marker on its own. */
 private const val LINE_FEED: Byte = 0x0A
+
+/**
+ * The data of a [PdfStream]: bytes held in memory, or bytes a source hands over
+ * when the stream is written.
+ *
+ * The second is for the one kind of stream that is large and arrives finished —
+ * a JPEG embedded as it stands. Its length is known before it is read, which is
+ * all `/Length` needs, so the file is opened when the stream is written, copied
+ * through and let go; a document of thirty photographs never holds more than
+ * the one being written.
+ */
+internal sealed class StreamBody {
+    abstract val length: Long
+
+    abstract fun bytes(): ByteArray
+
+    abstract fun writeTo(sink: Sink)
+
+    class Bytes(val array: ByteArray) : StreamBody() {
+        override val length: Long get() = array.size.toLong()
+
+        override fun bytes(): ByteArray = array
+
+        override fun writeTo(sink: Sink) = sink.write(array, 0, array.size)
+    }
+
+    /**
+     * [length] bytes that [open] hands over afresh each time, under [key] — what
+     * two bodies are the same data by, since their bytes are not at hand to
+     * compare.
+     *
+     * @throws IllegalStateException on writing, if the source no longer holds
+     *   [length] bytes: `/Length` has been promised, and a file that changed
+     *   between building the document and writing it would be a stream that
+     *   lies about its own end.
+     */
+    class Opened(override val length: Long, val key: Any, private val open: () -> RawSource) : StreamBody() {
+        override fun bytes(): ByteArray {
+            val buffer = Buffer()
+            writeTo(buffer)
+            return buffer.readByteArray()
+        }
+
+        override fun writeTo(sink: Sink) {
+            val source = open()
+            try {
+                val chunk = Buffer()
+                var copied = 0L
+                while (true) {
+                    val read = source.readAtMostTo(chunk, COPY_CHUNK)
+                    if (read < 0) break
+                    copied += read
+                    check(copied <= length) { changed(copied) }
+                    sink.write(chunk, chunk.size)
+                }
+                check(copied == length) { changed(copied) }
+            } finally {
+                source.close()
+            }
+        }
+
+        private fun changed(copied: Long): String =
+            "the data of $key were $length bytes when the document was built and are at least $copied now; " +
+                "the stream's /Length is the number of bytes it holds (ISO 32000-2:2020 §7.3.8.2), so the " +
+                "file must not change until the document is written"
+
+        override fun toString(): String = "$key ($length bytes)"
+    }
+}
+
+/** How much of an opened stream is copied at a time. */
+private const val COPY_CHUNK: Long = 64L * 1024

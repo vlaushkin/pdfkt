@@ -14,6 +14,7 @@ import io.pdfkt.core.obj.PdfName
 import io.pdfkt.core.obj.PdfObject
 import io.pdfkt.core.obj.PdfRef
 import io.pdfkt.core.obj.PdfStream
+import io.pdfkt.core.obj.StreamBody
 
 // ISO 32000-2:2020 §7.8.3 "Resource dictionaries" (Table 34),
 // §8.8.1 "External objects — General" (Table 86),
@@ -112,8 +113,21 @@ public class ImageCatalog {
             resolved.colorSpace == incoming.colorSpace &&
             resolved.bitsPerComponent == incoming.bitsPerComponent &&
             resolved.filter == incoming.filter &&
-            (resolved.data === incoming.data || resolved.data.contentEquals(incoming.data)) &&
+            sameSamples(resolved.samples, incoming.samples) &&
             sameSoftMask(resolved.softMask, incoming.softMask)
+
+        /**
+         * Samples in memory are compared by identity and then by contents; samples
+         * read from a file when they are written are the same samples when they
+         * are the same file of the same length — their bytes are not at hand.
+         */
+        fun sameSamples(resolved: StreamBody, incoming: StreamBody): Boolean = when {
+            resolved is StreamBody.Bytes && incoming is StreamBody.Bytes ->
+                resolved.array === incoming.array || resolved.array.contentEquals(incoming.array)
+            resolved is StreamBody.Opened && incoming is StreamBody.Opened ->
+                resolved.key == incoming.key && resolved.length == incoming.length
+            else -> false
+        }
 
         fun sameSoftMask(resolved: ImageRef?, incoming: ImageRef?): Boolean = when {
             resolved == null || incoming == null -> resolved == null && incoming == null
@@ -192,5 +206,5 @@ private fun imageStream(ref: ImageRef, define: (PdfObject) -> PdfRef): PdfStream
         )
     ref.filter?.let { dictionary[PdfName("Filter")] = it.pdfName }
     ref.softMask?.let { mask -> dictionary[PdfName("SMask")] = define(imageStream(mask, define)) }
-    return PdfStream(PdfDict(dictionary), ref.data)
+    return PdfStream(PdfDict(dictionary), ref.samples)
 }

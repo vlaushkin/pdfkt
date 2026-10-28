@@ -316,6 +316,34 @@ final class FacadeFidelityTests: XCTestCase {
 
     // MARK: - Sections, themes, supplied fonts
 
+
+    /// A picture by URL writes the PDF its bytes write, and `write(to:)` —
+    /// which renders straight into the file — writes what `toData()` returns.
+    func testImageFromFileAndWriteToFile() throws {
+        let photo = headerOnlyJpeg(width: 64, height: 48)
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let photoURL = dir.appendingPathComponent("photo.jpg")
+        try photo.write(to: photoURL)
+
+        func album(_ image: PdfktDSL.Image) -> PdfktDSL.Document {
+            PdfktDSL.Document(
+                date: Date(timeIntervalSince1970: TimeInterval(pinnedEpochSeconds)),
+                timeZone: TimeZone(secondsFromGMT: 0)!
+            ) {
+                Section(pageSize: .custom(width: 64, height: 48), margins: .all(0)) { image }
+            }
+        }
+        let byData = try album(Image(data: photo)).toData()
+        XCTAssertEqual(try album(Image(url: photoURL)).toData(), byData)
+        XCTAssertEqual(try album(Image(path: photoURL.path)).toData(), byData)
+
+        let out = dir.appendingPathComponent("album.pdf")
+        try album(Image(url: photoURL)).write(to: out)
+        XCTAssertEqual(try Data(contentsOf: out), byData)
+    }
+
     func testAlbumSectionsWithSuppliedFont() throws {
         let fontData = try Data(contentsOf: testFontURL)
         let photo = headerOnlyJpeg(width: 64, height: 48)

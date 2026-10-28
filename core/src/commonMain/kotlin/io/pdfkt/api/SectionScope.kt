@@ -12,6 +12,7 @@ import io.pdfkt.core.block.Block
 import io.pdfkt.core.block.ImageFit
 import io.pdfkt.core.block.PageBreakBlock
 import io.pdfkt.core.image.ImageRef
+import kotlinx.io.files.Path
 
 // No clause applies: the DSL is this library's own design.
 
@@ -27,7 +28,10 @@ import io.pdfkt.core.image.ImageRef
  * as it is when written twice into the document.
  */
 @PdfktDsl
-public class SectionScope internal constructor(private val imageRef: (ByteArray) -> ImageRef) : BlockSink {
+public class SectionScope internal constructor(
+    private val imageRef: (ByteArray) -> ImageRef,
+    private val fileRef: (Path) -> ImageRef,
+) : BlockSink {
     private val blocks = mutableListOf<Block>()
 
     override fun add(block: Block) {
@@ -40,7 +44,16 @@ public class SectionScope internal constructor(private val imageRef: (ByteArray)
      * it, moved whole to the next page of the section.
      */
     public fun image(bytes: ByteArray, fit: ImageFit = ImageFit.Contain, rotationDegrees: Int = 0) {
-        add(imageBlock(bytes, fit, rotationDegrees, imageRef))
+        add(imageBlock(fit, rotationDegrees) { imageRef(bytes) })
+    }
+
+    /**
+     * Put the picture in the file at [path] here, on the terms of
+     * [DocumentScope.image] with a path: a JPEG is copied into the PDF when the
+     * document is written and not held until then.
+     */
+    public fun image(path: Path, fit: ImageFit = ImageFit.Contain, rotationDegrees: Int = 0) {
+        add(imageBlock(fit, rotationDegrees) { fileRef(path) })
     }
 
     /** Break the page here: whatever is written next starts another page of the section's paper. */
