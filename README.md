@@ -79,6 +79,12 @@ scopes with typed page numbering, an injectable `Clock`, a typed `Theme`,
 an emoji policy — and no silent loss: a glyph the font cannot draw is an
 error naming the character, never a blank page.
 
+`PageSize.FitContent(width)` (Swift `.fitContent(width:)`) is paper of that
+width and as tall as the section's content plus its margins — a photo and a
+caption in whatever font the caption needs, on one page, without measuring
+the text in the application. Each `pageBreak()` in such a section starts a
+page measured on its own.
+
 ### Text in any script, from the fonts of the system
 
 A supplied font may be TrueType or OpenType with CFF or CFF2 outlines, a

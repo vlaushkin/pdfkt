@@ -8,6 +8,9 @@ public enum PageSize {
     case letter
     case legal
     case custom(width: Double, height: Double) // points
+    /// `width` points wide and as tall as the content of the `Section` it is
+    /// given to, plus its margins: the page grows to fit a caption of any font.
+    case fitContent(width: Double)
 
     internal var kotlin: Pdfkt.PageSize {
         switch self {
@@ -17,6 +20,8 @@ public enum PageSize {
         case .legal: return PageSizeLegal.shared
         case .custom(let width, let height):
             return PageSizeCustom(width: Float(width), height: Float(height))
+        case .fitContent(let width):
+            return PageSizeFitContent(width: Float(width))
         }
     }
 }

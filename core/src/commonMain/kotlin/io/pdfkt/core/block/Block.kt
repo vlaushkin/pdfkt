@@ -408,12 +408,16 @@ public data object PageBreakBlock : Block {
  *   fill the page: [VerticalAlign.Middle] is a title page, centred top to
  *   bottom. A section that runs onto a second page aligns each page on its own.
  * @property content the blocks of the section, in order.
+ * @property fitHeight whether each page is as tall as its content plus the
+ *   margins and the bands, rather than [pageSize]'s height — which is then
+ *   only the most the content may take.
  */
 public data class SectionBlock(
     public val pageSize: Size,
     public val margins: Insets,
     public val verticalAlign: VerticalAlign = VerticalAlign.Top,
     public val content: List<Block>,
+    public val fitHeight: Boolean = false,
 ) : Block {
     override val spacingBefore: Pt? get() = null
     override val spacingAfter: Pt? get() = null

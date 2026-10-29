@@ -495,6 +495,7 @@ public class DocumentScope internal constructor() : BlockSink {
                 margins = margins.toInsets(),
                 verticalAlign = verticalAlign,
                 content = content,
+                fitHeight = pageSize is PageSize.FitContent,
             ),
         )
     }

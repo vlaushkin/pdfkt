@@ -52,8 +52,24 @@ public sealed interface PageSize {
     public data class Custom(public val width: Pt, public val height: Pt) : PageSize {
         override fun toSize(): Size = Size(width, height)
     }
+
+    /**
+     * Paper [width] wide and as tall as what is on it: the content of a
+     * `section` measured, then its margins and the document's bands added.
+     * Only a section has such pages; each `pageBreak()` inside one starts a
+     * page measured on its own.
+     *
+     * [toSize] is the tallest page the format has room for — "the maximum
+     * value is 14,400" units a side (ISO 32000-2:2020 Annex C, Table C.1) —
+     * which is what the content is measured against.
+     */
+    public data class FitContent(public val width: Pt) : PageSize {
+        override fun toSize(): Size = Size(width, Pt(LARGEST_PAGE))
+    }
 }
 
+/** Annex C, Table C.1: the largest page side, in default user space units. */
+private const val LARGEST_PAGE: Float = 14_400f
 private const val A5_WIDTH_MM: Float = 148.0f
 private const val A5_HEIGHT_MM: Float = 210.0f
 

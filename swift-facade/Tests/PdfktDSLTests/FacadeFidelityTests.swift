@@ -394,6 +394,22 @@ final class FacadeFidelityTests: XCTestCase {
         XCTAssertTrue(text.contains("/Helvetica") && text.contains("/Type0"))
     }
 
+    func testFitContentPageIsAsTallAsItsContent() throws {
+        let photo = headerOnlyJpeg(width: 64, height: 48)
+        let facade = PdfktDSL.Document {
+            Section(pageSize: .fitContent(width: 64), margins: Margins(top: 0, right: 0, bottom: 10, left: 0)) {
+                Image(data: photo)
+                Paragraph { Text("Caption").fontSize(8) }.spacing(before: 10)
+            }
+        }
+        let document = try XCTUnwrap(PDFDocument(data: try facade.toData()))
+        XCTAssertEqual(document.pageCount, 1)
+        let height = try XCTUnwrap(document.page(at: 0)).bounds(for: .mediaBox).height
+        // The photo, the gap, the ink of one line of 8 pt Helvetica, the margin.
+        XCTAssertGreaterThan(height, 48 + 10 + 10 + 8 * 0.8)
+        XCTAssertLessThan(height, 48 + 10 + 10 + 8 * 1.2)
+    }
+
     func testSystemFontsOfEveryFormatAndDirection() throws {
         // A member of a font collection with CFF outlines (Hiragino Sans GB, CID-keyed),
         // and Arabic, which is shaped and runs right to left.

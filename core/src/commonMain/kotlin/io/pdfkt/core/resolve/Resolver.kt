@@ -197,6 +197,7 @@ public class Resolver(private val theme: Theme, private val fonts: FontCatalog) 
             margins = block.margins,
             verticalAlign = block.verticalAlign,
             content = block.content.map { resolveBlock(it, base) },
+            fitHeight = block.fitHeight,
         )
     }
 

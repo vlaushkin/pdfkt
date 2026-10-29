@@ -231,6 +231,7 @@ public data class StyledSection(
     public val margins: Insets,
     public val verticalAlign: VerticalAlign,
     public val content: List<StyledBlock>,
+    public val fitHeight: Boolean = false,
 ) : StyledBlock {
     override val spacingBefore: Pt get() = Pt.ZERO
     override val spacingAfter: Pt get() = Pt.ZERO

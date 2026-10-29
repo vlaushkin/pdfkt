@@ -11,9 +11,12 @@ package io.pdfkt.core.doc
 import io.pdfkt.core.block.VerticalAlign
 import io.pdfkt.core.emit.PlanEmitter
 import io.pdfkt.core.font.FontCatalog
+import io.pdfkt.core.fragment.BlockPlanner
+import io.pdfkt.core.fragment.FitResult
 import io.pdfkt.core.fragment.Fragmenter
 import io.pdfkt.core.image.ImageCatalog
 import io.pdfkt.core.model.Insets
+import io.pdfkt.core.model.Pt
 import io.pdfkt.core.model.Size
 import io.pdfkt.core.obj.PdfDate
 import io.pdfkt.core.plan.PagePlan
@@ -138,7 +141,12 @@ internal fun layOut(
     }
 
     for (block in styled) {
-        if (block is StyledSection) {
+        if (block is StyledSection && block.fitHeight) {
+            flush()
+            for (page in pagesOf(block.content)) {
+                fragment(fittedSetup(spec, fonts, block, page), block.verticalAlign, page)
+            }
+        } else if (block is StyledSection) {
             flush()
             fragment(PageSetup(block.pageSize, block.margins), block.verticalAlign, block.content)
         } else {
@@ -149,6 +157,42 @@ internal fun layOut(
     if (pages.isEmpty()) fragment(document, VerticalAlign.Top, emptyList())
     return pages
 }
+
+/** The blocks of a section, cut at its page breaks: what each of its pages holds. */
+private fun pagesOf(content: List<StyledBlock>): List<List<StyledBlock>> {
+    val pages = mutableListOf(mutableListOf<StyledBlock>())
+    for (block in content) {
+        if (block is StyledPageBreak) pages += mutableListOf<StyledBlock>() else pages.last() += block
+    }
+    return pages.filterIndexed { index, page -> page.isNotEmpty() || index == 0 }
+}
+
+/**
+ * The paper of a page as tall as [content]: the content planned into the
+ * section's column against the most room a page has, then the margins and the
+ * bands above and below it added back. The page it gives is one the same
+ * content fits on exactly.
+ */
+private fun fittedSetup(
+    spec: DocumentSpec,
+    fonts: FontCatalog,
+    section: StyledSection,
+    content: List<StyledBlock>,
+): PageSetup {
+    val area = spec.contentArea(section.pageSize, section.margins)
+    val fit = BlockPlanner(fonts).planSequence(content, area.width, area.height, atPageTop = true)
+    val consumed = when (fit) {
+        is FitResult.Fits -> fit.consumed
+        is FitResult.Splits -> fit.consumed
+        FitResult.Defers -> Pt.ZERO
+    }
+    val around = section.pageSize.height - area.height
+    // A page with nothing on it still has the room the margins and bands need.
+    return PageSetup(Size(section.pageSize.width, around + maxOf(consumed, EMPTY_PAGE)), section.margins)
+}
+
+/** The content height of a measured page with nothing on it. */
+private val EMPTY_PAGE: Pt = Pt(1.0f)
 
 /**
  * The `/ID` of the trailer for a document created at [stamp].
