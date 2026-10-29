@@ -39,7 +39,7 @@ allprojects {
 // stays `io.pdfkt` — the same arrangement docxkt publishes under.
 allprojects {
     group = "io.github.vlaushkin"
-    version = "0.0.6"
+    version = "0.0.7"
 }
 
 // Apply ktlint + spotless to all subprojects with Kotlin sources
