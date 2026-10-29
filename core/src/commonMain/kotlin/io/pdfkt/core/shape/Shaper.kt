@@ -19,7 +19,15 @@ import io.pdfkt.core.text.UnicodeProperties
 // Property" (Common and Inherited).
 
 /** One glyph of shaped text, in visual order: drawn at the pen plus its offsets, then the pen moves by its advance. */
-internal class ShapedGlyph(val id: Int, val cluster: Int, val xAdvance: Int, val xOffset: Int, val yOffset: Int) {
+internal class ShapedGlyph(
+    val id: Int,
+    val cluster: Int,
+    val xAdvance: Int,
+    val xOffset: Int,
+    val yOffset: Int,
+    /** The characters the glyph draws; see [ShapingGlyph.text]. */
+    val text: String = "",
+) {
     override fun toString(): String = "$id=$cluster@$xOffset,$yOffset+$xAdvance"
 }
 
@@ -54,7 +62,7 @@ internal class Shaper(private val font: LayoutFont) {
             if (rightToLeft) {
                 UnicodeProperties.mirror(codePoint)?.let { mirror -> if (font.glyphOf(mirror) != 0) mapped = mirror }
             }
-            glyphs += ShapingGlyph(0, i, mapped)
+            glyphs += ShapingGlyph(0, i, mapped).also { it.text = codePointString(codePoint) }
             i += if (codePoint > 0xFFFF) 2 else 1
         }
         normalise(glyphs, kind)
@@ -86,7 +94,7 @@ internal class Shaper(private val font: LayoutFont) {
         // in the lookups and are not drawn, whether or not the font has a glyph.
         val visible = buffer.glyphs.filterNot { !it.substituted && UnicodeProperties.isDefaultIgnorable(it.codePoint) }
         val ordered = if (rightToLeft) visible.reversed() else visible
-        return ordered.map { ShapedGlyph(it.id, it.cluster, it.xAdvance, it.xOffset, it.yOffset) }
+        return ordered.map { ShapedGlyph(it.id, it.cluster, it.xAdvance, it.xOffset, it.yOffset, it.text) }
     }
 
     /**
@@ -122,7 +130,10 @@ internal class Shaper(private val font: LayoutFont) {
             val always = kind == ShapingModel.INDIC
             if (parts != null && (always || font.glyphOf(glyph.codePoint) == 0) && parts.all { drawable(it) }) {
                 glyphs.removeAt(i)
-                glyphs.addAll(i, parts.map { ShapingGlyph(0, glyph.cluster, it) })
+                val decomposed = parts.map { ShapingGlyph(0, glyph.cluster, it) }
+                // A character drawn by its decomposition is read back as itself.
+                decomposed.forEachIndexed { k, part -> part.text = if (k == 0) glyph.text else "" }
+                glyphs.addAll(i, decomposed)
                 continue
             }
             i++
@@ -158,6 +169,7 @@ internal class Shaper(private val font: LayoutFont) {
             }
             if (composed != null && font.glyphOf(composed) != 0) {
                 glyphs[starter].codePoint = composed
+                glyphs[starter].text += mark.text
                 glyphs[starter].cluster = minOf(glyphs[starter].cluster, mark.cluster)
                 glyphs.removeAt(i)
             } else {
@@ -223,8 +235,8 @@ internal class Shaper(private val font: LayoutFont) {
             while (start > 0 && above(glyphs[start - 1].codePoint)) start--
             val cluster = glyphs[start].cluster.coerceAtMost(glyph.cluster)
             glyphs.removeAt(i)
-            glyphs.add(i, ShapingGlyph(0, glyph.cluster, saraAa))
-            glyphs.add(start, ShapingGlyph(0, glyph.cluster, nikhahit))
+            glyphs.add(i, ShapingGlyph(0, glyph.cluster, saraAa).also { it.text = glyph.text })
+            glyphs.add(start, ShapingGlyph(0, glyph.cluster, nikhahit).also { it.text = "" })
             val base = if (start > 0) start - 1 else start
             val merged = minOf(cluster, glyphs[base].cluster)
             for (k in base..i + 1) glyphs[k].cluster = merged

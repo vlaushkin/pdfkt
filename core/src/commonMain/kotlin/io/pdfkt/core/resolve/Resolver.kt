@@ -36,6 +36,7 @@ import io.pdfkt.core.style.EmojiPolicy
 import io.pdfkt.core.style.FontFamily
 import io.pdfkt.core.style.Theme
 import io.pdfkt.core.text.TextSegment
+import io.pdfkt.core.text.UnicodeProperties
 import io.pdfkt.core.text.segmentEmoji
 
 // No clause applies: L4 is this library's own design. §9.6.5.1 and Annex D are what
@@ -111,6 +112,7 @@ public class Resolver(private val theme: Theme, private val fonts: FontCatalog) 
             indentLeft = block.indentLeft,
             indentRight = block.indentRight,
             firstLineIndent = block.firstLineIndent,
+            direction = block.direction,
             spacingBefore = block.spacingBefore ?: theme.paragraphSpacingBefore,
             spacingAfter = block.spacingAfter ?: theme.paragraphSpacingAfter,
             keepWithNext = block.keepWithNext,
@@ -392,6 +394,10 @@ public class Resolver(private val theme: Theme, private val fonts: FontCatalog) 
         forEachCodePoint(text) { index, codePoint ->
             val held = current
             val font = when {
+                // A combining mark, a joiner, a variation selector belongs to
+                // the character before it: they are shaped together, so they
+                // are drawn by one font — the one that drew that character.
+                held != null && joinsPrevious(codePoint) && fonts.canDraw(held, codePoint) -> held
                 // A space between two words of a fallback stays in it, so the
                 // words are one run rather than three.
                 held != null && held != style.font && codePoint == SPACE && fonts.canDraw(held, codePoint) -> held
@@ -413,6 +419,11 @@ public class Resolver(private val theme: Theme, private val fonts: FontCatalog) 
         }
         return runs
     }
+
+    /** Whether [codePoint] is shaped with the character before it rather than on its own. */
+    private fun joinsPrevious(codePoint: Int): Boolean = UnicodeProperties.isMark(codePoint) ||
+        UnicodeProperties.isDefaultIgnorable(codePoint) ||
+        UnicodeProperties.script(codePoint) == "Inherited"
 
     /**
      * A run of [text] in [style], having asked the font whether it can draw it.
@@ -575,7 +586,7 @@ public class Resolver(private val theme: Theme, private val fonts: FontCatalog) 
 
         /** A block set flush to what its cell asked for, if the cell asked for anything. */
         fun aligned(block: StyledBlock, align: TextAlign): StyledBlock =
-            if (align == TextAlign.Left || block !is StyledParagraph) block else block.copy(align = align)
+            if (align == TextAlign.Start || block !is StyledParagraph) block else block.copy(align = align)
 
         /** A line of a code block that the emoji policy emptied, or that was empty to begin with. */
         fun emptyRun(style: InlineStyle): StyledTextRun = StyledTextRun("", style.font, style.size, style.color)

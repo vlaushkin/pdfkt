@@ -40,7 +40,7 @@ internal object CffSubset {
      * PostScript [name].
      */
     fun of(font: CffFont, glyphIds: Iterable<Int>, name: String): ByteArray {
-        val kept = (glyphIds.toSortedSet() + NOTDEF).toSortedSet().toList()
+        val kept = (glyphIds.toSet() + NOTDEF).sorted()
         kept.forEach { require(it in 0 until font.numGlyphs) { "glyph $it of a font with ${font.numGlyphs}" } }
         val flattener = CharstringFlattener(font)
         val charStrings = kept.map { flattener.flatten(it) }

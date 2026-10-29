@@ -159,8 +159,11 @@ public typealias LinkRun = io.pdfkt.core.block.LinkRun
 /** A break inside a paragraph: the line ends here, the paragraph does not. */
 public typealias BreakRun = io.pdfkt.core.block.BreakRun
 
-/** Where a line sits in its column: `Left`, `Center`, `Right` or `Justify`. */
+/** Where a line sits in its column: `Left`, `Center`, `Right`, `Justify`, `Start` or `End`. */
 public typealias TextAlign = io.pdfkt.core.block.TextAlign
+
+/** Which way a paragraph runs; see [io.pdfkt.core.block.TextDirection]. */
+public typealias TextDirection = io.pdfkt.core.block.TextDirection
 
 /** Where a table cell's content sits in a row taller than itself. */
 public typealias VerticalAlign = io.pdfkt.core.block.VerticalAlign

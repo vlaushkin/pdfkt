@@ -80,9 +80,9 @@ class RichColophonScopeTest {
             paragraph(BODY)
         }.toDocumentSpec()
 
-        assertEquals(TextAlign.Left, assertNotNull(spec.header).lineOn(page = 1, of = 1).align)
+        assertEquals(TextAlign.Start, assertNotNull(spec.header).lineOn(page = 1, of = 1).align)
         assertEquals(
-            TextAlign.Left,
+            TextAlign.Start,
             assertNotNull(spec.footer).lineOn(page = 1, of = 1).align,
             "a block foot has no side of its own to prefer; the text form's Right does not carry over",
         )
@@ -94,7 +94,7 @@ class RichColophonScopeTest {
             paragraph(BODY)
         }.toDocumentSpec()
 
-        assertEquals(TextAlign.Left, assertNotNull(text.header).lineOn(page = 1, of = 1).align)
+        assertEquals(TextAlign.Start, assertNotNull(text.header).lineOn(page = 1, of = 1).align)
         assertEquals(TextAlign.Right, assertNotNull(text.footer).lineOn(page = 1, of = 1).align)
     }
 

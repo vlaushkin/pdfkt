@@ -45,6 +45,10 @@ import io.pdfkt.core.plan.PlacedRun
  * @property links the stretches of this line that carry a link target, already
  *   joined across the runs that share one. The fragmenter cuts each into
  *   a [PlacedItem.Link] once it knows the baseline.
+ * @property rightToLeft whether the paragraph the line is from is a
+ *   right-to-left one — the direction its start and its end alignments mean.
+ *   The [runs] are in reading order; each run's x-offset is where the
+ *   bidirectional algorithm put it on the line.
  */
 public data class TextLine(
     public val runs: List<PlacedRun>,
@@ -53,6 +57,7 @@ public data class TextLine(
     public val descent: Pt,
     public val height: Pt,
     public val links: List<LinkSpan> = emptyList(),
+    public val rightToLeft: Boolean = false,
 ) {
     /**
      * The characters of this line, in reading order.

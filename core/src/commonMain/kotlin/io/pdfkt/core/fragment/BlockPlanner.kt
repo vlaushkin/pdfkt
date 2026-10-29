@@ -10,6 +10,7 @@ package io.pdfkt.core.fragment
 
 import io.pdfkt.core.block.ImageFit
 import io.pdfkt.core.block.TextAlign
+import io.pdfkt.core.block.TextDirection
 import io.pdfkt.core.font.FontCatalog
 import io.pdfkt.core.model.Pt
 import io.pdfkt.core.model.Rect
@@ -291,6 +292,7 @@ public class BlockPlanner(private val fonts: FontCatalog) {
             width = column,
             lineHeight = paragraph.lineHeight,
             firstLineIndent = paragraph.firstLineIndent,
+            direction = paragraph.direction,
         )
         return fitLines(lines, paragraph.indentLeft, column, paragraph.align, available) { rest ->
             listOf(
@@ -298,6 +300,9 @@ public class BlockPlanner(private val fonts: FontCatalog) {
                     content = inlineOf(rest),
                     firstLineIndent = Pt.ZERO,
                     spacingBefore = Pt.ZERO,
+                    // The rest of a paragraph runs the way the paragraph did,
+                    // whatever its own first letter is.
+                    direction = if (lines.first().rightToLeft) TextDirection.RightToLeft else TextDirection.LeftToRight,
                 ),
             )
         }
@@ -318,7 +323,12 @@ public class BlockPlanner(private val fonts: FontCatalog) {
         val room = available - padding * 2.0f
         if (column <= Pt.ZERO) throw UnplaceableBlockException.narrowerThanItsIndents(code, width, available)
         if (room <= Pt.ZERO) return FitResult.Defers
-        val lines = breaker.breakIntoLines(inlineOfCode(code), column, code.lineHeight)
+        val lines = breaker.breakIntoLines(
+            inlineOfCode(code),
+            column,
+            code.lineHeight,
+            direction = TextDirection.LeftToRight,
+        )
         val fit = fitLines(lines, padding, column, TextAlign.Left, room) { rest ->
             listOf(code.copy(lines = rest.map { line -> codeRunOf(line, code) }, spacingBefore = Pt.ZERO))
         }
@@ -600,13 +610,19 @@ public class BlockPlanner(private val fonts: FontCatalog) {
         var top = Pt.ZERO
         var bottom = Pt.ZERO
         for (line in lines) {
-            val shift = when (align) {
-                // Justified setting is not implemented, so a justified paragraph is
-                // set flush left — which is what it would look like anyway but
-                // for the stretching of its spaces.
-                TextAlign.Left, TextAlign.Justify -> Pt.ZERO
+            // Start and End are the sides a line begins and ends at. Justified
+            // setting is not implemented, so a justified paragraph is set flush
+            // to its start — which is what it would look like anyway but for
+            // the stretching of its spaces.
+            val side = when (align) {
+                TextAlign.Start, TextAlign.Justify -> if (line.rightToLeft) TextAlign.Right else TextAlign.Left
+                TextAlign.End -> if (line.rightToLeft) TextAlign.Left else TextAlign.Right
+                else -> align
+            }
+            val shift = when (side) {
                 TextAlign.Center -> (column - line.width) / 2.0f
                 TextAlign.Right -> column - line.width
+                else -> Pt.ZERO
             }
             val left = x + shift
             val baseline = -(top + line.ascent)

@@ -67,7 +67,7 @@ public class ListScope internal constructor() {
  * One item's content. Every block builder of [BlockSink] applies, which is what
  * makes a list of tables or a list of lists ordinary rather than a special case.
  */
-public class ListItemScope internal constructor() : BlockContainerScope(TextAlign.Left)
+public class ListItemScope internal constructor() : BlockContainerScope(TextAlign.Start)
 
 /**
  * The unordered list a `bulletList { }` describes.

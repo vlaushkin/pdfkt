@@ -45,6 +45,7 @@ public fun BlockSink.spacedParagraph(
     indentRight: Double,
     spacingBefore: Double?,
     spacingAfter: Double?,
+    direction: TextDirection,
     block: InlineScope.() -> Unit,
 ) {
     paragraph(
@@ -53,6 +54,7 @@ public fun BlockSink.spacedParagraph(
         indentRight = indentRight.pt,
         spacingBefore = spacingBefore?.pt,
         spacingAfter = spacingAfter?.pt,
+        direction = direction,
         block = block,
     )
 }

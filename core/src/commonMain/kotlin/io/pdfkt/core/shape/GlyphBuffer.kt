@@ -21,6 +21,13 @@ package io.pdfkt.core.shape
  *   a ligature, a reordered syllable — share the lowest index of it.
  */
 internal class ShapingGlyph(var id: Int, var cluster: Int, var codePoint: Int) {
+    /**
+     * The characters this glyph draws, in reading order: its own character,
+     * every component's for a ligature, nothing for the second and later
+     * glyphs of a multiple substitution or a glyph the shaper inserted.
+     */
+    var text: String = codePointString(codePoint)
+
     /** Which features apply to this glyph: one bit per feature the plan allotted one. */
     var mask: Long = 0
 
@@ -77,6 +84,7 @@ internal class ShapingGlyph(var id: Int, var cluster: Int, var codePoint: Int) {
         it.category = category
         it.position = position
         it.syllable = syllable
+        it.text = text
     }
 
     override fun toString(): String = "g$id@$cluster"
@@ -119,4 +127,11 @@ internal class GlyphBuffer(val glyphs: MutableList<ShapingGlyph>, val rightToLef
         while (high < size && glyphs[high].cluster == last) high++
         for (i in low until high) glyphs[i].cluster = cluster
     }
+}
+
+internal fun codePointString(codePoint: Int): String = if (codePoint > 0xFFFF) {
+    val offset = codePoint - 0x10000
+    charArrayOf(((offset ushr 10) + 0xD800).toChar(), ((offset and 0x3FF) + 0xDC00).toChar()).concatToString()
+} else {
+    codePoint.toChar().toString()
 }

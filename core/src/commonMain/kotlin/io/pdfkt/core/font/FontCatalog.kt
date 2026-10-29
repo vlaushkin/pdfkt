@@ -8,10 +8,12 @@
  */
 package io.pdfkt.core.font
 
+import io.pdfkt.core.content.TextArrayElement
 import io.pdfkt.core.obj.PdfDict
 import io.pdfkt.core.obj.PdfName
 import io.pdfkt.core.obj.PdfObject
 import io.pdfkt.core.obj.PdfRef
+import io.pdfkt.core.text.UnicodeProperties
 
 // ISO 32000-2:2020 §7.8.3 "Resource dictionaries" (Table 34),
 // §9.6.2.1 "Type 1 fonts — General" (Table 109),
@@ -359,6 +361,34 @@ public class ResolvedFont internal constructor(
     public fun encode(text: String): ByteArray = when (ref) {
         is FontRef.Standard14 -> ref.name.encode(text)
         is FontRef.Supplied, is FontRef.ColorEmoji, is FontRef.RasterizedEmoji -> writtenFont().encode(text)
+    }
+
+    /**
+     * [text] as the font draws it — see [WrittenFont.show]. A standard font
+     * shapes nothing: a right-to-left run of it is its characters in reverse,
+     * the mirrored ones mirrored (UAX #9 §L4), marked with the text in reading
+     * order.
+     */
+    internal fun show(text: String, rightToLeft: Boolean): List<TextShow> = when (ref) {
+        is FontRef.Standard14 -> {
+            if (!rightToLeft) {
+                listOf(TextShow.Show(listOf(TextArrayElement.Codes(ref.name.encode(text)))))
+            } else {
+                val reversed = buildString {
+                    val codePoints = ArrayList<Int>()
+                    forEachCodePoint(text) { _, codePoint -> codePoints += codePoint }
+                    for (codePoint in codePoints.reversed()) {
+                        append(codePointToString(UnicodeProperties.mirror(codePoint) ?: codePoint))
+                    }
+                }
+                listOf(
+                    TextShow.BeginActualText(text),
+                    TextShow.Show(listOf(TextArrayElement.Codes(ref.name.encode(reversed)))),
+                    TextShow.EndActualText,
+                )
+            }
+        }
+        is FontRef.Supplied, is FontRef.ColorEmoji, is FontRef.RasterizedEmoji -> writtenFont().show(text, rightToLeft)
     }
 
     override fun toString(): String = "ResolvedFont(/${resourceName.name} -> $ref)"

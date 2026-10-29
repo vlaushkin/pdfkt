@@ -4,7 +4,8 @@ import Pdfkt
 /// A paragraph of inline runs, paired with docxkt's `Paragraph`.
 public struct Paragraph {
     internal let runs: [Run]
-    internal var align: Alignment = .left
+    internal var align: Alignment = .start
+    internal var direction: TextDirection = .auto
     internal var indentLeft: Double = 0
     internal var indentRight: Double = 0
     internal var spacingBefore: Double?
@@ -17,6 +18,13 @@ public struct Paragraph {
     public func alignment(_ value: Alignment) -> Paragraph {
         var copy = self
         copy.align = value
+        return copy
+    }
+
+    /// Which way it runs; `.auto` unless the text says otherwise.
+    public func direction(_ value: TextDirection) -> Paragraph {
+        var copy = self
+        copy.direction = value
         return copy
     }
 
@@ -49,6 +57,7 @@ public struct Paragraph {
             indentRight: indentRight,
             spacingBefore: spacingBefore.map { KotlinDouble(value: $0) },
             spacingAfter: spacingAfter.map { KotlinDouble(value: $0) },
+            direction: direction.kotlin,
             block: applyToInline
         )
     }

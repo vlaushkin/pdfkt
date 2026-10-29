@@ -43,7 +43,7 @@ public struct Row {
 public struct Cell {
     private let text: String?
     private let paragraphs: [Paragraph]?
-    private var align: Alignment = .left
+    private var align: Alignment = .start
 
     public init(_ text: String) {
         self.text = text

@@ -48,6 +48,17 @@ internal interface WrittenFont : GlyphSpaceMetrics {
     fun encode(text: String): ByteArray
 
     /**
+     * How [text] is drawn: the codes it is shown as, and — for a font that
+     * shapes — where each glyph goes and what text the glyphs stand for.
+     *
+     * @param rightToLeft whether the text is at an odd embedding level of the
+     *   bidirectional algorithm, and so drawn from right to left: its glyphs
+     *   come out in the order they are drawn, left to right.
+     */
+    fun show(text: String, rightToLeft: Boolean): List<TextShow> =
+        listOf(TextShow.Show(listOf(io.pdfkt.core.content.TextArrayElement.Codes(encode(text)))))
+
+    /**
      * The font dictionary this font is written into the file as, over the glyphs
      * the pages showed.
      *

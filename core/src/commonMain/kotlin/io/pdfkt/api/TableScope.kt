@@ -103,7 +103,7 @@ public class RowScope internal constructor() {
     /** A cell of one plain-text paragraph. */
     public fun cell(
         text: String,
-        align: TextAlign = TextAlign.Left,
+        align: TextAlign = TextAlign.Start,
         verticalAlign: VerticalAlign = VerticalAlign.Top,
         backgroundColor: Rgb? = null,
     ) {
@@ -117,7 +117,7 @@ public class RowScope internal constructor() {
      * engine plans one with the same function it plans a page with.
      */
     public fun cell(
-        align: TextAlign = TextAlign.Left,
+        align: TextAlign = TextAlign.Start,
         verticalAlign: VerticalAlign = VerticalAlign.Top,
         backgroundColor: Rgb? = null,
         block: CellScope.() -> Unit,

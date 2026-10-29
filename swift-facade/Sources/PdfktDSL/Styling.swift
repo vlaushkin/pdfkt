@@ -71,9 +71,11 @@ public struct Metadata {
     }
 }
 
-/// How a paragraph sits in its column.
+/// How a paragraph sits in its column. `.left` and `.right` are sides of the
+/// page; `.start` and `.end` are where a line begins and ends — the right and
+/// the left of a Hebrew or Arabic paragraph.
 public enum Alignment {
-    case left, center, right, justify
+    case left, center, right, justify, start, end
 
     internal var kotlin: TextAlign {
         switch self {
@@ -81,6 +83,22 @@ public enum Alignment {
         case .center: return .center
         case .right: return .right
         case .justify: return .justify
+        case .start: return .start
+        case .end: return .end
+        }
+    }
+}
+
+/// Which way a paragraph runs. `.auto` takes it from its first letter that has
+/// one, so Hebrew and Arabic run right to left by themselves.
+public enum TextDirection {
+    case auto, leftToRight, rightToLeft
+
+    internal var kotlin: Pdfkt.TextDirection {
+        switch self {
+        case .auto: return .auto_
+        case .leftToRight: return .lefttoright
+        case .rightToLeft: return .righttoleft
         }
     }
 }

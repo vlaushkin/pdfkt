@@ -19,8 +19,8 @@ public abstract class io/pdfkt/api/BlockContainerScope : io/pdfkt/api/BlockSink,
 	public fun link (Ljava/lang/String;Ljava/lang/String;)V
 	public fun link (Ljava/lang/String;Lkotlin/jvm/functions/Function1;)V
 	public fun numberedList-dNaHhV0 (ILio/pdfkt/core/block/ListMarkerStyle;FLkotlin/jvm/functions/Function1;)V
-	public fun paragraph-ovla7P4 (Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lkotlin/jvm/functions/Function1;)V
-	public fun paragraph-u7UMoxU (Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;)V
+	public fun paragraph-IPgSGko (Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;)V
+	public fun paragraph-Tkmts9E (Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;Lkotlin/jvm/functions/Function1;)V
 	public fun strike (Ljava/lang/String;)V
 	public fun strike (Lkotlin/jvm/functions/Function1;)V
 	public fun styled-c4nKZUQ (ZZZZZLio/pdfkt/core/model/Rgb;Lio/pdfkt/core/model/Pt;Lkotlin/jvm/functions/Function1;)V
@@ -46,10 +46,10 @@ public abstract interface class io/pdfkt/api/BlockSink {
 	public static synthetic fun hr-kjmY71A$default (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Rgb;Lio/pdfkt/core/model/Pt;ILjava/lang/Object;)V
 	public fun numberedList-dNaHhV0 (ILio/pdfkt/core/block/ListMarkerStyle;FLkotlin/jvm/functions/Function1;)V
 	public static synthetic fun numberedList-dNaHhV0$default (Lio/pdfkt/api/BlockSink;ILio/pdfkt/core/block/ListMarkerStyle;FLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
-	public fun paragraph-ovla7P4 (Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun paragraph-ovla7P4$default (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
-	public fun paragraph-u7UMoxU (Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;)V
-	public static synthetic fun paragraph-u7UMoxU$default (Lio/pdfkt/api/BlockSink;Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;ILjava/lang/Object;)V
+	public fun paragraph-IPgSGko (Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;)V
+	public static synthetic fun paragraph-IPgSGko$default (Lio/pdfkt/api/BlockSink;Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;ILjava/lang/Object;)V
+	public fun paragraph-Tkmts9E (Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun paragraph-Tkmts9E$default (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public fun table (Lkotlin/jvm/functions/Function1;)V
 }
 
@@ -66,10 +66,10 @@ public final class io/pdfkt/api/BlockSink$DefaultImpls {
 	public static synthetic fun hr-kjmY71A$default (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Rgb;Lio/pdfkt/core/model/Pt;ILjava/lang/Object;)V
 	public static fun numberedList-dNaHhV0 (Lio/pdfkt/api/BlockSink;ILio/pdfkt/core/block/ListMarkerStyle;FLkotlin/jvm/functions/Function1;)V
 	public static synthetic fun numberedList-dNaHhV0$default (Lio/pdfkt/api/BlockSink;ILio/pdfkt/core/block/ListMarkerStyle;FLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
-	public static fun paragraph-ovla7P4 (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lkotlin/jvm/functions/Function1;)V
-	public static synthetic fun paragraph-ovla7P4$default (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
-	public static fun paragraph-u7UMoxU (Lio/pdfkt/api/BlockSink;Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;)V
-	public static synthetic fun paragraph-u7UMoxU$default (Lio/pdfkt/api/BlockSink;Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;ILjava/lang/Object;)V
+	public static fun paragraph-IPgSGko (Lio/pdfkt/api/BlockSink;Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;)V
+	public static synthetic fun paragraph-IPgSGko$default (Lio/pdfkt/api/BlockSink;Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;ILjava/lang/Object;)V
+	public static fun paragraph-Tkmts9E (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun paragraph-Tkmts9E$default (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public static fun table (Lio/pdfkt/api/BlockSink;Lkotlin/jvm/functions/Function1;)V
 }
 
@@ -149,8 +149,8 @@ public final class io/pdfkt/api/DocumentScope : io/pdfkt/api/BlockSink {
 	public final fun landscape ()V
 	public fun numberedList-dNaHhV0 (ILio/pdfkt/core/block/ListMarkerStyle;FLkotlin/jvm/functions/Function1;)V
 	public final fun pageBreak ()V
-	public fun paragraph-ovla7P4 (Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lkotlin/jvm/functions/Function1;)V
-	public fun paragraph-u7UMoxU (Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;)V
+	public fun paragraph-IPgSGko (Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;)V
+	public fun paragraph-Tkmts9E (Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;Lkotlin/jvm/functions/Function1;)V
 	public final fun section (Lio/pdfkt/api/PageSize;Lio/pdfkt/api/Margins;Lio/pdfkt/core/block/VerticalAlign;Lkotlin/jvm/functions/Function1;)V
 	public static synthetic fun section$default (Lio/pdfkt/api/DocumentScope;Lio/pdfkt/api/PageSize;Lio/pdfkt/api/Margins;Lio/pdfkt/core/block/VerticalAlign;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
 	public final fun setClock (Lio/pdfkt/core/doc/Clock;)V
@@ -296,7 +296,7 @@ public final class io/pdfkt/api/ObjCInteropKt {
 	public static final fun fontSize (Lio/pdfkt/api/InlineStyleScope;D)V
 	public static final fun imageFile (Lio/pdfkt/api/DocumentScope;Ljava/lang/String;Lio/pdfkt/core/block/ImageFit;I)V
 	public static final fun imageFile (Lio/pdfkt/api/SectionScope;Ljava/lang/String;Lio/pdfkt/core/block/ImageFit;I)V
-	public static final fun spacedParagraph (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/block/TextAlign;DDLjava/lang/Double;Ljava/lang/Double;Lkotlin/jvm/functions/Function1;)V
+	public static final fun spacedParagraph (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/block/TextAlign;DDLjava/lang/Double;Ljava/lang/Double;Lio/pdfkt/core/block/TextDirection;Lkotlin/jvm/functions/Function1;)V
 	public static final fun themeOf (Lio/pdfkt/core/style/FontFamily;DDI)Lio/pdfkt/core/style/Theme;
 	public static final fun withEmojiPolicy (Lio/pdfkt/core/style/Theme;Lio/pdfkt/core/style/EmojiPolicy;)Lio/pdfkt/core/style/Theme;
 	public static final fun writeToFile (Lio/pdfkt/api/Document;Ljava/lang/String;)V
@@ -377,8 +377,8 @@ public final class io/pdfkt/api/SectionScope : io/pdfkt/api/BlockSink {
 	public static synthetic fun image$default (Lio/pdfkt/api/SectionScope;[BLio/pdfkt/core/block/ImageFit;IILjava/lang/Object;)V
 	public fun numberedList-dNaHhV0 (ILio/pdfkt/core/block/ListMarkerStyle;FLkotlin/jvm/functions/Function1;)V
 	public final fun pageBreak ()V
-	public fun paragraph-ovla7P4 (Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lkotlin/jvm/functions/Function1;)V
-	public fun paragraph-u7UMoxU (Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;)V
+	public fun paragraph-IPgSGko (Ljava/lang/String;Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;)V
+	public fun paragraph-Tkmts9E (Lio/pdfkt/core/block/TextAlign;FFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;Lio/pdfkt/core/block/TextDirection;Lkotlin/jvm/functions/Function1;)V
 	public fun table (Lkotlin/jvm/functions/Function1;)V
 }
 
@@ -646,9 +646,10 @@ public final class io/pdfkt/core/block/PageBreakBlock : io/pdfkt/core/block/Bloc
 }
 
 public final class io/pdfkt/core/block/ParagraphBlock : io/pdfkt/core/block/Block {
-	public synthetic fun <init> (Ljava/util/List;Lio/pdfkt/core/block/TextAlign;FFFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;ZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Ljava/util/List;Lio/pdfkt/core/block/TextAlign;FFFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;ZZLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/util/List;Lio/pdfkt/core/block/TextAlign;FFFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;ZZLio/pdfkt/core/block/TextDirection;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/util/List;Lio/pdfkt/core/block/TextAlign;FFFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;ZZLio/pdfkt/core/block/TextDirection;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
+	public final fun component10 ()Lio/pdfkt/core/block/TextDirection;
 	public final fun component2 ()Lio/pdfkt/core/block/TextAlign;
 	public final fun component3-Fbppk9g ()F
 	public final fun component4-Fbppk9g ()F
@@ -657,11 +658,12 @@ public final class io/pdfkt/core/block/ParagraphBlock : io/pdfkt/core/block/Bloc
 	public final fun component7-iB2hR3o ()Lio/pdfkt/core/model/Pt;
 	public final fun component8 ()Z
 	public final fun component9 ()Z
-	public final fun copy-uC9Px_Y (Ljava/util/List;Lio/pdfkt/core/block/TextAlign;FFFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;ZZ)Lio/pdfkt/core/block/ParagraphBlock;
-	public static synthetic fun copy-uC9Px_Y$default (Lio/pdfkt/core/block/ParagraphBlock;Ljava/util/List;Lio/pdfkt/core/block/TextAlign;FFFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;ZZILjava/lang/Object;)Lio/pdfkt/core/block/ParagraphBlock;
+	public final fun copy-7thWr58 (Ljava/util/List;Lio/pdfkt/core/block/TextAlign;FFFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;ZZLio/pdfkt/core/block/TextDirection;)Lio/pdfkt/core/block/ParagraphBlock;
+	public static synthetic fun copy-7thWr58$default (Lio/pdfkt/core/block/ParagraphBlock;Ljava/util/List;Lio/pdfkt/core/block/TextAlign;FFFLio/pdfkt/core/model/Pt;Lio/pdfkt/core/model/Pt;ZZLio/pdfkt/core/block/TextDirection;ILjava/lang/Object;)Lio/pdfkt/core/block/ParagraphBlock;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAlign ()Lio/pdfkt/core/block/TextAlign;
 	public final fun getContent ()Ljava/util/List;
+	public final fun getDirection ()Lio/pdfkt/core/block/TextDirection;
 	public final fun getFirstLineIndent-Fbppk9g ()F
 	public final fun getIndentLeft-Fbppk9g ()F
 	public final fun getIndentRight-Fbppk9g ()F
@@ -836,12 +838,23 @@ public final class io/pdfkt/core/block/TableColumns$Fractional : io/pdfkt/core/b
 
 public final class io/pdfkt/core/block/TextAlign : java/lang/Enum {
 	public static final field Center Lio/pdfkt/core/block/TextAlign;
+	public static final field End Lio/pdfkt/core/block/TextAlign;
 	public static final field Justify Lio/pdfkt/core/block/TextAlign;
 	public static final field Left Lio/pdfkt/core/block/TextAlign;
 	public static final field Right Lio/pdfkt/core/block/TextAlign;
+	public static final field Start Lio/pdfkt/core/block/TextAlign;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lio/pdfkt/core/block/TextAlign;
 	public static fun values ()[Lio/pdfkt/core/block/TextAlign;
+}
+
+public final class io/pdfkt/core/block/TextDirection : java/lang/Enum {
+	public static final field Auto Lio/pdfkt/core/block/TextDirection;
+	public static final field LeftToRight Lio/pdfkt/core/block/TextDirection;
+	public static final field RightToLeft Lio/pdfkt/core/block/TextDirection;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/pdfkt/core/block/TextDirection;
+	public static fun values ()[Lio/pdfkt/core/block/TextDirection;
 }
 
 public final class io/pdfkt/core/block/TextRun : io/pdfkt/core/block/InlineRun {
@@ -866,9 +879,11 @@ public final class io/pdfkt/core/block/VerticalAlign : java/lang/Enum {
 
 public final class io/pdfkt/core/content/ContentStreamBuilder {
 	public fun <init> ()V
+	public final fun beginMarkedContent-4ak_Fdk (Ljava/lang/String;Lio/pdfkt/core/obj/PdfDict;)V
 	public final fun beginText ()V
 	public final fun build ()[B
 	public final fun concat (DDDDDD)V
+	public final fun endMarkedContent ()V
 	public final fun endText ()V
 	public final fun fill ()V
 	public final fun fillAndStroke ()V
@@ -888,6 +903,7 @@ public final class io/pdfkt/core/content/ContentStreamBuilder {
 	public final fun strokingColor (DDD)V
 	public final fun textFont-4ak_Fdk (Ljava/lang/String;D)V
 	public final fun textMatrix (DDDDDD)V
+	public final fun textRise (D)V
 }
 
 public abstract interface class io/pdfkt/core/content/TextArrayElement {
@@ -1054,6 +1070,7 @@ public final class io/pdfkt/core/doc/PdfDocumentWriterKt {
 
 public final class io/pdfkt/core/emit/PlanEmitter {
 	public static final field FINISHED Ljava/lang/String;
+	public static final field GLYPH_SPACE D
 	public fun <init> (Lio/pdfkt/core/doc/PdfDocumentWriter;Lio/pdfkt/core/font/FontCatalog;Lio/pdfkt/core/image/ImageCatalog;)V
 	public synthetic fun <init> (Lio/pdfkt/core/doc/PdfDocumentWriter;Lio/pdfkt/core/font/FontCatalog;Lio/pdfkt/core/image/ImageCatalog;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun emit (Lio/pdfkt/core/plan/PagePlan;)V
@@ -1141,7 +1158,9 @@ public final class io/pdfkt/core/font/FontRef$Standard14 : io/pdfkt/core/font/Fo
 
 public final class io/pdfkt/core/font/FontRef$Supplied : io/pdfkt/core/font/FontRef {
 	public fun <init> ([BLjava/lang/String;)V
+	public fun <init> ([BLjava/lang/String;I)V
 	public final fun getId ()Ljava/lang/String;
+	public final fun getIndex ()I
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -1258,8 +1277,8 @@ public final class io/pdfkt/core/fragment/Fragmenter {
 
 public final class io/pdfkt/core/fragment/LineBreaker {
 	public fun <init> (Lio/pdfkt/core/font/FontCatalog;)V
-	public final fun breakIntoLines-ps3wrN0 (Ljava/util/List;FFF)Ljava/util/List;
-	public static synthetic fun breakIntoLines-ps3wrN0$default (Lio/pdfkt/core/fragment/LineBreaker;Ljava/util/List;FFFILjava/lang/Object;)Ljava/util/List;
+	public final fun breakIntoLines-sdwSsWM (Ljava/util/List;FFFLio/pdfkt/core/block/TextDirection;)Ljava/util/List;
+	public static synthetic fun breakIntoLines-sdwSsWM$default (Lio/pdfkt/core/fragment/LineBreaker;Ljava/util/List;FFFLio/pdfkt/core/block/TextDirection;ILjava/lang/Object;)Ljava/util/List;
 }
 
 public final class io/pdfkt/core/fragment/LinkSpan {
@@ -1296,21 +1315,23 @@ public final class io/pdfkt/core/fragment/PageTemplate$Companion {
 }
 
 public final class io/pdfkt/core/fragment/TextLine {
-	public synthetic fun <init> (Ljava/util/List;FFFFLjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Ljava/util/List;FFFFLjava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/util/List;FFFFLjava/util/List;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/util/List;FFFFLjava/util/List;ZLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
 	public final fun component2-Fbppk9g ()F
 	public final fun component3-Fbppk9g ()F
 	public final fun component4-Fbppk9g ()F
 	public final fun component5-Fbppk9g ()F
 	public final fun component6 ()Ljava/util/List;
-	public final fun copy-7tUVLgU (Ljava/util/List;FFFFLjava/util/List;)Lio/pdfkt/core/fragment/TextLine;
-	public static synthetic fun copy-7tUVLgU$default (Lio/pdfkt/core/fragment/TextLine;Ljava/util/List;FFFFLjava/util/List;ILjava/lang/Object;)Lio/pdfkt/core/fragment/TextLine;
+	public final fun component7 ()Z
+	public final fun copy-mOxyHY4 (Ljava/util/List;FFFFLjava/util/List;Z)Lio/pdfkt/core/fragment/TextLine;
+	public static synthetic fun copy-mOxyHY4$default (Lio/pdfkt/core/fragment/TextLine;Ljava/util/List;FFFFLjava/util/List;ZILjava/lang/Object;)Lio/pdfkt/core/fragment/TextLine;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAscent-Fbppk9g ()F
 	public final fun getDescent-Fbppk9g ()F
 	public final fun getHeight-Fbppk9g ()F
 	public final fun getLinks ()Ljava/util/List;
+	public final fun getRightToLeft ()Z
 	public final fun getRuns ()Ljava/util/List;
 	public final fun getText ()Ljava/lang/String;
 	public final fun getWidth-Fbppk9g ()F
@@ -1897,8 +1918,8 @@ public final class io/pdfkt/core/plan/PlacedItem$Text : io/pdfkt/core/plan/Place
 }
 
 public final class io/pdfkt/core/plan/PlacedRun {
-	public synthetic fun <init> (Ljava/lang/String;Lio/pdfkt/core/font/FontRef;FLio/pdfkt/core/model/Rgb;FFLjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Ljava/lang/String;Lio/pdfkt/core/font/FontRef;FLio/pdfkt/core/model/Rgb;FFLjava/util/List;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/pdfkt/core/font/FontRef;FLio/pdfkt/core/model/Rgb;FFLjava/util/List;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/lang/String;Lio/pdfkt/core/font/FontRef;FLio/pdfkt/core/model/Rgb;FFLjava/util/List;ZLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/lang/String;
 	public final fun component2 ()Lio/pdfkt/core/font/FontRef;
 	public final fun component3-Fbppk9g ()F
@@ -1906,12 +1927,14 @@ public final class io/pdfkt/core/plan/PlacedRun {
 	public final fun component5-Fbppk9g ()F
 	public final fun component6-Fbppk9g ()F
 	public final fun component7 ()Ljava/util/List;
-	public final fun copy-Jj0Nv_c (Ljava/lang/String;Lio/pdfkt/core/font/FontRef;FLio/pdfkt/core/model/Rgb;FFLjava/util/List;)Lio/pdfkt/core/plan/PlacedRun;
-	public static synthetic fun copy-Jj0Nv_c$default (Lio/pdfkt/core/plan/PlacedRun;Ljava/lang/String;Lio/pdfkt/core/font/FontRef;FLio/pdfkt/core/model/Rgb;FFLjava/util/List;ILjava/lang/Object;)Lio/pdfkt/core/plan/PlacedRun;
+	public final fun component8 ()Z
+	public final fun copy-3JQjixY (Ljava/lang/String;Lio/pdfkt/core/font/FontRef;FLio/pdfkt/core/model/Rgb;FFLjava/util/List;Z)Lio/pdfkt/core/plan/PlacedRun;
+	public static synthetic fun copy-3JQjixY$default (Lio/pdfkt/core/plan/PlacedRun;Ljava/lang/String;Lio/pdfkt/core/font/FontRef;FLio/pdfkt/core/model/Rgb;FFLjava/util/List;ZILjava/lang/Object;)Lio/pdfkt/core/plan/PlacedRun;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getColor ()Lio/pdfkt/core/model/Rgb;
 	public final fun getDecorations ()Ljava/util/List;
 	public final fun getFont ()Lio/pdfkt/core/font/FontRef;
+	public final fun getRightToLeft ()Z
 	public final fun getSize-Fbppk9g ()F
 	public final fun getText ()Ljava/lang/String;
 	public final fun getWidth-Fbppk9g ()F
@@ -2081,10 +2104,11 @@ public final class io/pdfkt/core/resolve/StyledPageBreak : io/pdfkt/core/resolve
 }
 
 public final class io/pdfkt/core/resolve/StyledParagraph : io/pdfkt/core/resolve/StyledBlock {
-	public synthetic fun <init> (Ljava/util/List;FLio/pdfkt/core/block/TextAlign;FFFFFZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public synthetic fun <init> (Ljava/util/List;FLio/pdfkt/core/block/TextAlign;FFFFFZZLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/util/List;FLio/pdfkt/core/block/TextAlign;FFFFFZZLio/pdfkt/core/block/TextDirection;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (Ljava/util/List;FLio/pdfkt/core/block/TextAlign;FFFFFZZLio/pdfkt/core/block/TextDirection;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Ljava/util/List;
 	public final fun component10 ()Z
+	public final fun component11 ()Lio/pdfkt/core/block/TextDirection;
 	public final fun component2 ()F
 	public final fun component3 ()Lio/pdfkt/core/block/TextAlign;
 	public final fun component4-Fbppk9g ()F
@@ -2093,11 +2117,12 @@ public final class io/pdfkt/core/resolve/StyledParagraph : io/pdfkt/core/resolve
 	public final fun component7-Fbppk9g ()F
 	public final fun component8-Fbppk9g ()F
 	public final fun component9 ()Z
-	public final fun copy-F5JvpUc (Ljava/util/List;FLio/pdfkt/core/block/TextAlign;FFFFFZZ)Lio/pdfkt/core/resolve/StyledParagraph;
-	public static synthetic fun copy-F5JvpUc$default (Lio/pdfkt/core/resolve/StyledParagraph;Ljava/util/List;FLio/pdfkt/core/block/TextAlign;FFFFFZZILjava/lang/Object;)Lio/pdfkt/core/resolve/StyledParagraph;
+	public final fun copy-JuxYoDU (Ljava/util/List;FLio/pdfkt/core/block/TextAlign;FFFFFZZLio/pdfkt/core/block/TextDirection;)Lio/pdfkt/core/resolve/StyledParagraph;
+	public static synthetic fun copy-JuxYoDU$default (Lio/pdfkt/core/resolve/StyledParagraph;Ljava/util/List;FLio/pdfkt/core/block/TextAlign;FFFFFZZLio/pdfkt/core/block/TextDirection;ILjava/lang/Object;)Lio/pdfkt/core/resolve/StyledParagraph;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAlign ()Lio/pdfkt/core/block/TextAlign;
 	public final fun getContent ()Ljava/util/List;
+	public final fun getDirection ()Lio/pdfkt/core/block/TextDirection;
 	public final fun getFirstLineIndent-Fbppk9g ()F
 	public final fun getIndentLeft-Fbppk9g ()F
 	public final fun getIndentRight-Fbppk9g ()F

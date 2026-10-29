@@ -260,6 +260,7 @@ internal class LookupApplier(
                 replace(it, id)
                 it.multiplied = true
                 it.ligatureComponent = k + 1
+                if (k > 0) it.text = ""
             }
         }
         buffer.glyphs.removeAt(i)
@@ -327,6 +328,7 @@ internal class LookupApplier(
                 buffer[k].ligatureComponent = component
             }
         }
+        first.text = positions.joinToString("") { buffer[it].text }
         replace(first, ligatureGlyph)
         first.ligated = true
         first.ligatureId = id

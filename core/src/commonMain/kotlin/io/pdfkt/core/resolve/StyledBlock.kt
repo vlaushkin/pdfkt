@@ -12,6 +12,7 @@ import io.pdfkt.core.block.ImageFit
 import io.pdfkt.core.block.TableBorderStyle
 import io.pdfkt.core.block.TableColumns
 import io.pdfkt.core.block.TextAlign
+import io.pdfkt.core.block.TextDirection
 import io.pdfkt.core.block.VerticalAlign
 import io.pdfkt.core.block.requireRectangularTable
 import io.pdfkt.core.image.ImageRef
@@ -63,11 +64,12 @@ public sealed interface StyledBlock {
  * @property indentLeft space kept clear on the left of every line.
  * @property indentRight space kept clear on the right of every line.
  * @property firstLineIndent extra indent on the first line only.
+ * @property direction which way the paragraph runs; see [TextDirection].
  */
 public data class StyledParagraph(
     public val content: List<StyledInline>,
     public val lineHeight: Float,
-    public val align: TextAlign = TextAlign.Left,
+    public val align: TextAlign = TextAlign.Start,
     public val indentLeft: Pt = Pt.ZERO,
     public val indentRight: Pt = Pt.ZERO,
     public val firstLineIndent: Pt = Pt.ZERO,
@@ -75,6 +77,7 @@ public data class StyledParagraph(
     override val spacingAfter: Pt = Pt.ZERO,
     override val keepWithNext: Boolean = false,
     override val keepTogether: Boolean = false,
+    public val direction: TextDirection = TextDirection.Auto,
 ) : StyledBlock
 
 /**
@@ -167,7 +170,7 @@ public data class StyledTable(
  */
 public data class StyledCell(
     public val content: List<StyledBlock>,
-    public val align: TextAlign = TextAlign.Left,
+    public val align: TextAlign = TextAlign.Start,
     public val verticalAlign: VerticalAlign = VerticalAlign.Top,
     public val background: Rgb? = null,
 )

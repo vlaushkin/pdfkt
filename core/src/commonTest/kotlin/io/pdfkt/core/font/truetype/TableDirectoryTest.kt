@@ -89,16 +89,36 @@ class TableDirectoryTest {
     }
 
     @Test
-    fun `a font collection is refused by name`() {
-        // "Font Collection ID string: 'ttcf'" — a TTC header, not a font.
+    fun `a font of a collection is read through the offset the TTC header gives it`() {
+        // "Font Collection ID string: 'ttcf'", the version, numFonts, and "the
+        // offset to the TableDirectory for each font from the beginning of the file".
+        val first = minimalFontBytes()
+        val second = trueTypeFontBytes(
+            listOf("head" holding headTableBytes()),
+            sfntVersion = TableDirectory.COMPACT_FONT_FORMAT_OUTLINES,
+        )
+        val header = 12 + 2 * 4
         val bytes = bigEndian {
             tag("ttcf")
             u16(1)
             u16(0)
             u32(2)
-        }
+            u32(header.toLong())
+            u32((header + first.size).toLong())
+        } + first + second
+        val file = BigEndianReader.over(bytes, "the font program")
 
-        val refused = assertFailsWith<IllegalArgumentException> { directoryOf(bytes) }
+        assertEquals(TableDirectory.TRUE_TYPE_OUTLINES, TableDirectory.parse(file, 0).sfntVersion)
+        assertEquals(TableDirectory.COMPACT_FONT_FORMAT_OUTLINES, TableDirectory.parse(file, 1).sfntVersion)
+        val refused = assertFailsWith<IllegalArgumentException> { TableDirectory.parse(file, 2) }
+        assertTrue("holds 2 fonts" in refused.message.orEmpty(), refused.message)
+    }
+
+    @Test
+    fun `a single font has no font but font 0`() {
+        val refused = assertFailsWith<IllegalArgumentException> {
+            TableDirectory.parse(BigEndianReader.over(minimalFontBytes(), "the font program"), 1)
+        }
 
         assertTrue("collection" in refused.message.orEmpty(), refused.message)
     }

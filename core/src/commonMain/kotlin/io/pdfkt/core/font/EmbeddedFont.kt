@@ -8,6 +8,7 @@
  */
 package io.pdfkt.core.font
 
+import io.pdfkt.core.content.TextArrayElement
 import io.pdfkt.core.filter.flateStream
 import io.pdfkt.core.font.cff.CffFont
 import io.pdfkt.core.font.cff.CffSubset
@@ -23,6 +24,12 @@ import io.pdfkt.core.obj.PdfObject
 import io.pdfkt.core.obj.PdfReal
 import io.pdfkt.core.obj.PdfRef
 import io.pdfkt.core.obj.PdfString
+import io.pdfkt.core.shape.ShapedGlyph
+import io.pdfkt.core.shape.Shaper
+import io.pdfkt.core.shape.layoutFontOf
+import io.pdfkt.core.text.BidiClass
+import io.pdfkt.core.text.UnicodeProperties
+import kotlin.math.abs
 
 // ISO 32000-2:2020 §9.7 "Composite fonts" (Tables 114, 115, 119),
 // §9.8 "Font descriptors" (Tables 120, 121), §9.9 "Embedded font programs"
@@ -106,7 +113,7 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
      * order, which nothing downstream depends on: the subset sorts, and so does
      * everything written from this map.
      */
-    private val shownGlyphs: MutableMap<Int, Int> = LinkedHashMap()
+    private val shownGlyphs: MutableMap<Int, String> = LinkedHashMap()
 
     /**
      * The program's CFF or CFF2 outlines, or null for a font with TrueType
@@ -137,12 +144,39 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
      * @throws UnencodableCharacterException at the first character the font
      *   program has no glyph for.
      */
-    override fun advanceOf(text: String): Double {
-        var advance = 0.0
+    override fun advanceOf(text: String): Double =
+        shaped(text, startsRightToLeft(text)).sumOf { inGlyphSpace(it.xAdvance) }
+
+    /**
+     * The shaper over this font's layout tables: "GSUB … substitution of
+     * glyphs" and "GPOS … precise control over glyph placement", as each
+     * script's shaping model applies them.
+     */
+    private val shaper: Shaper by lazy(LazyThreadSafetyMode.NONE) { Shaper(layoutFontOf(program)) }
+
+    /** Text already shaped, since a word is measured when it is broken and again when it is drawn. */
+    private val shapedText = HashMap<Pair<String, Boolean>, List<ShapedGlyph>>()
+
+    /**
+     * [text] shaped in one direction, the glyphs in visual order.
+     *
+     * @throws UnencodableCharacterException at the first character the font has
+     *   no glyph for and cannot draw by its decomposition either.
+     */
+    private fun shaped(text: String, rightToLeft: Boolean): List<ShapedGlyph> {
+        shapedText[text to rightToLeft]?.let { return it }
         forEachCodePoint(text) { index, codePoint ->
-            advance += inGlyphSpace(program.advanceWidthOf(glyphIdOf(codePoint, text, index)))
+            if (!canDraw(
+                    codePoint,
+                )
+            ) {
+                throw UnencodableCharacterException.outsideFontProgram(text, index, codePoint, ref.id)
+            }
         }
-        return advance
+        val glyphs = shaper.shape(text, rightToLeft)
+        if (shapedText.size >= SHAPED_CACHE_SIZE) shapedText.clear()
+        shapedText[text to rightToLeft] = glyphs
+        return glyphs
     }
 
     override val ascent: Double get() = inGlyphSpace(program.hhea.ascender)
@@ -178,11 +212,94 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
         var at = 0
         forEachCodePoint(text) { index, codePoint ->
             val glyphId = glyphIdOf(codePoint, text, index)
-            show(glyphId, codePoint)
+            show(glyphId, codePointToString(codePoint))
             codes[at++] = (glyphId ushr Byte.SIZE_BITS).toByte()
             codes[at++] = glyphId.toByte()
         }
         return codes
+    }
+
+    /**
+     * [text] as shaping lays it out: each glyph at the position `GPOS` gave
+     * it, reached from the one before by the `TJ` adjustments of §9.4.3 — "the
+     * number shall be subtracted from the current horizontal coordinate" — and
+     * by `Ts` for one set above or below the baseline.
+     *
+     * Where the glyphs do not read back as the text they stand for — a
+     * ligature, a syllable whose glyphs are in another order than its
+     * characters, a base with marks set on it — they are marked with the text itself
+     * as `ActualText`, "an exact replacement for" what the glyphs show
+     * (§14.9.4), so a reader that copies or searches the page gets the words.
+     */
+    override fun show(text: String, rightToLeft: Boolean): List<TextShow> {
+        val glyphs = shaped(text, rightToLeft)
+        val starts = glyphs.map { it.cluster }.distinct().sorted()
+        fun clusterText(cluster: Int): String =
+            text.substring(cluster, starts.firstOrNull { it > cluster } ?: text.length)
+
+        val shows = ArrayList<TextShow>()
+        val elements = ArrayList<TextArrayElement>()
+        var codes = ArrayList<Byte>()
+        var adjustment = 0.0
+        var rise = 0.0
+        fun flushCodes() {
+            if (codes.isNotEmpty()) elements += TextArrayElement.Codes(codes.toByteArray())
+            codes = ArrayList()
+        }
+        fun adjust(amount: Double) {
+            adjustment += amount
+        }
+        fun placeAdjustment() {
+            if (abs(adjustment) > ADJUSTMENT_EPSILON) {
+                flushCodes()
+                elements += TextArrayElement.Adjustment(adjustment)
+            }
+            adjustment = 0.0
+        }
+        fun flush() {
+            flushCodes()
+            if (elements.any { it is TextArrayElement.Codes }) shows += TextShow.Show(elements.toList())
+            elements.clear()
+        }
+
+        var i = 0
+        while (i < glyphs.size) {
+            var end = i + 1
+            while (end < glyphs.size && glyphs[end].cluster == glyphs[i].cluster) end++
+            val group = glyphs.subList(i, end)
+            val written = clusterText(group[0].cluster)
+            for (glyph in group) show(glyph.id, glyph.text)
+            val replaced = group.joinToString("") { shownGlyphs.getValue(it.id) } != written
+            if (replaced) {
+                flush()
+                shows += TextShow.BeginActualText(written)
+            }
+            for (glyph in group) {
+                val glyphRise = inGlyphSpace(glyph.yOffset)
+                if (abs(glyphRise - rise) > ADJUSTMENT_EPSILON) {
+                    flush()
+                    shows += TextShow.Rise(glyphRise)
+                    rise = glyphRise
+                }
+                val offset = inGlyphSpace(glyph.xOffset)
+                // "The number shall be subtracted from the current horizontal
+                // coordinate": a negative number moves the next glyph right.
+                adjust(-offset)
+                placeAdjustment()
+                codes += (glyph.id ushr Byte.SIZE_BITS).toByte()
+                codes += glyph.id.toByte()
+                adjust(inGlyphSpace(program.advanceWidthOf(glyph.id)) + offset - inGlyphSpace(glyph.xAdvance))
+            }
+            if (replaced) {
+                placeAdjustment()
+                flush()
+                shows += TextShow.EndActualText
+            }
+            i = end
+        }
+        flush()
+        if (rise != 0.0) shows += TextShow.Rise(0.0)
+        return shows
     }
 
     // ---- Writing the font (§9.7, §9.8, §9.9) ------------------------------
@@ -438,7 +555,7 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
      * character the page did draw.
      */
     private fun unicodeMappings(): List<Pair<Int, String>> =
-        shownGlyphs.entries.sortedBy { it.key }.map { (code, codePoint) -> code to codePointToString(codePoint) }
+        shownGlyphs.entries.filter { it.value.isNotEmpty() }.sortedBy { it.key }.map { (code, text) -> code to text }
 
     // ---- Internals --------------------------------------------------------
 
@@ -452,7 +569,9 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
      * per the no-silent-loss policy.
      */
     /** Whether the program has a glyph for [codePoint] — asked without showing it. */
-    fun canDraw(codePoint: Int): Boolean = program.glyphIdOf(codePoint) != TrueTypeSubset.NOTDEF
+    fun canDraw(codePoint: Int): Boolean = program.glyphIdOf(codePoint) != TrueTypeSubset.NOTDEF ||
+        UnicodeProperties.isDefaultIgnorable(codePoint) ||
+        UnicodeProperties.decomposition(codePoint)?.all { canDraw(it) } == true
 
     private fun glyphIdOf(codePoint: Int, text: String, index: Int): Int {
         val glyphId = program.glyphIdOf(codePoint)
@@ -462,17 +581,17 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
         return glyphId
     }
 
-    /** Records that the document shows [glyphId] for the character [codePoint]. */
-    private fun show(glyphId: Int, codePoint: Int) {
+    /** Records that the document shows [glyphId] for [text]. */
+    private fun show(glyphId: Int, text: String) {
         if (glyphId in shownGlyphs) return
         check(!written) {
-            "the font \"${ref.id}\" was asked to show the character " +
-                "'${codePointToString(codePoint)}' with glyph $glyphId after its subset had been " +
+            "the font \"${ref.id}\" was asked to show " +
+                "'$text' with glyph $glyphId after its subset had been " +
                 "written into the file. The subset carries the glyphs collected up to that point and " +
                 "the CIDToGIDMap maps only those, so this glyph would come out as .notdef on the page " +
                 "— draw every page before writing the font dictionaries"
         }
-        shownGlyphs[glyphId] = codePoint
+        shownGlyphs[glyphId] = text
     }
 
     /**
@@ -490,6 +609,12 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
     private companion object {
         /** "the units of glyph space are one-thousandth of a unit of text space" (§9.2.4). */
         const val GLYPH_SPACE_UNITS_PER_EM: Double = 1000.0
+
+        /** How many runs of text a font keeps shaped. */
+        const val SHAPED_CACHE_SIZE: Int = 4096
+
+        /** A `TJ` adjustment smaller than this, in thousandths of an em, is no adjustment. */
+        const val ADJUSTMENT_EPSILON: Double = 1.0e-6
 
         /** An `Identity-H` code, and a `CIDToGIDMap` entry, are two bytes each. */
         const val BYTES_PER_CODE: Int = 2
@@ -560,4 +685,22 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
             ),
         )
     }
+}
+
+/** Whether the first strong character of [text] is right-to-left — the direction a measured word is shaped in. */
+internal fun startsRightToLeft(text: String): Boolean {
+    var result = false
+    var decided = false
+    forEachCodePoint(text) { _, codePoint ->
+        if (!decided) {
+            when (UnicodeProperties.bidiClass(codePoint)) {
+                BidiClass.L -> decided = true
+                BidiClass.R, BidiClass.AL -> {
+                    result = true
+                    decided = true
+                }
+            }
+        }
+    }
+    return result
 }

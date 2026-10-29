@@ -31,7 +31,7 @@ import io.pdfkt.core.model.Rgb
  * }
  * ```
  */
-public class BlockquoteScope internal constructor() : BlockContainerScope(TextAlign.Left)
+public class BlockquoteScope internal constructor() : BlockContainerScope(TextAlign.Start)
 
 /**
  * The quotation a `blockquote { }` describes.

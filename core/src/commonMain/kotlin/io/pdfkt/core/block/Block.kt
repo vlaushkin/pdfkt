@@ -57,10 +57,11 @@ public sealed interface Block {
  * @property indentRight space kept clear on the right of every line.
  * @property firstLineIndent extra indent for the first line only; negative
  *   hangs it out to the left, which is how a hanging indent is written.
+ * @property direction which way the paragraph runs; see [TextDirection].
  */
 public data class ParagraphBlock(
     public val content: List<InlineRun>,
-    public val align: TextAlign = TextAlign.Left,
+    public val align: TextAlign = TextAlign.Start,
     public val indentLeft: Pt = Pt.ZERO,
     public val indentRight: Pt = Pt.ZERO,
     public val firstLineIndent: Pt = Pt.ZERO,
@@ -68,6 +69,7 @@ public data class ParagraphBlock(
     override val spacingAfter: Pt? = null,
     override val keepWithNext: Boolean = false,
     override val keepTogether: Boolean = false,
+    public val direction: TextDirection = TextDirection.Auto,
 ) : Block
 
 /**
@@ -254,7 +256,7 @@ public sealed interface TableColumns {
  */
 public data class TableCell(
     public val content: List<Block>,
-    public val align: TextAlign = TextAlign.Left,
+    public val align: TextAlign = TextAlign.Start,
     public val verticalAlign: VerticalAlign = VerticalAlign.Top,
     public val background: Rgb? = null,
 )
@@ -419,8 +421,21 @@ public data class SectionBlock(
     override val keepTogether: Boolean get() = false
 }
 
-/** How the lines of a paragraph sit in their column. */
-public enum class TextAlign { Left, Center, Right, Justify }
+/**
+ * How the lines of a paragraph sit in their column. [Left] and [Right] are
+ * sides of the page; [Start] and [End] are the sides a line begins and ends
+ * at — the left and the right of a left-to-right paragraph, the right and the
+ * left of a right-to-left one.
+ */
+public enum class TextAlign { Left, Center, Right, Justify, Start, End }
+
+/**
+ * Which way a paragraph runs: "the paragraph embedding level" of the Unicode
+ * Bidirectional Algorithm (UAX #9 §3.3.1). [Auto] takes it from the first
+ * letter that has a direction — "find the first character of type L, AL, or
+ * R" (P2) — so Hebrew and Arabic paragraphs run right to left by themselves.
+ */
+public enum class TextDirection { Auto, LeftToRight, RightToLeft }
 
 /** How a cell's content sits in a row taller than it is. */
 public enum class VerticalAlign { Top, Middle, Bottom }

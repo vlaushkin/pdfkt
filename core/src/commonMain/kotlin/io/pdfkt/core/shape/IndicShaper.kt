@@ -191,6 +191,7 @@ internal object IndicShaper {
             var at = i
             if (buffer[at].category == REPHA) at++
             val inserted = ShapingGlyph(0, buffer[i].cluster, DOTTED_CIRCLE_CHARACTER).also {
+                it.text = ""
                 it.category = DOTTED_CIRCLE
                 it.position = POS_BASE_C
                 it.syllable = syllable

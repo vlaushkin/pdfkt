@@ -8,6 +8,7 @@
  */
 package io.pdfkt.core.fragment
 
+import io.pdfkt.core.block.TextDirection
 import io.pdfkt.core.font.FontCatalog
 import io.pdfkt.core.font.FontMetrics
 import io.pdfkt.core.font.codePointAt
@@ -18,6 +19,8 @@ import io.pdfkt.core.plan.PlacedRun
 import io.pdfkt.core.resolve.StyledBreak
 import io.pdfkt.core.resolve.StyledInline
 import io.pdfkt.core.resolve.StyledTextRun
+import io.pdfkt.core.text.BidiParagraph
+import io.pdfkt.core.text.UnicodeProperties
 
 // No clause applies: L4 is this library's own design. §9.2.4 is what the widths mean — "the distance the current
 // text position shall move … when the glyph is painted" — and it is asked of
@@ -102,6 +105,7 @@ public class LineBreaker(private val fonts: FontCatalog) {
         width: Pt,
         lineHeight: Float = 1.0f,
         firstLineIndent: Pt = Pt.ZERO,
+        direction: TextDirection = TextDirection.Auto,
     ): List<TextLine> {
         require(width.value > 0.0f) {
             "a column of $width has no room for any text: a line is broken against a width, and a " +
@@ -110,7 +114,7 @@ public class LineBreaker(private val fonts: FontCatalog) {
         require(lineHeight > 0.0f) {
             "the line height multiplier must be positive, got $lineHeight"
         }
-        return LineBreaking(fonts, content, width, lineHeight, firstLineIndent).lines()
+        return LineBreaking(fonts, content, width, lineHeight, firstLineIndent, direction).lines()
     }
 }
 
@@ -125,7 +129,63 @@ private class LineBreaking(
     private val columnWidth: Pt,
     private val lineHeightFactor: Float,
     firstLineIndent: Pt,
+    direction: TextDirection,
 ) {
+    /**
+     * The embedding levels of the paragraph's characters, by run: UAX #9 run
+     * over the whole paragraph, since "the algorithm … is applied to
+     * paragraphs" and a line is only a part of one. A hard break is a LINE
+     * SEPARATOR to it — a break within the paragraph, not the end of it.
+     */
+    private val levels: List<IntArray>
+
+    /** 0 for a left-to-right paragraph, 1 for a right-to-left one. */
+    private val paragraphLevel: Int
+
+    init {
+        val codePoints = ArrayList<Int>()
+        for (inline in content) {
+            when (inline) {
+                is StyledTextRun -> {
+                    var index = 0
+                    while (index < inline.text.length) {
+                        val codePoint = codePointAt(inline.text, index)
+                        codePoints += codePoint
+                        index += codePointToString(codePoint).length
+                    }
+                }
+                is StyledBreak -> if (inline.hard) codePoints += LINE_SEPARATOR
+            }
+        }
+        val requested = when (direction) {
+            TextDirection.Auto -> null
+            TextDirection.LeftToRight -> 0
+            TextDirection.RightToLeft -> 1
+        }
+        val bidi = BidiParagraph(codePoints.toIntArray(), requested)
+        paragraphLevel = bidi.paragraphLevel
+        var at = 0
+        levels = content.map { inline ->
+            when (inline) {
+                is StyledTextRun -> {
+                    val byIndex = IntArray(inline.text.length)
+                    var index = 0
+                    while (index < inline.text.length) {
+                        val length = codePointToString(codePointAt(inline.text, index)).length
+                        for (k in index until index + length) byIndex[k] = bidi.levels[at]
+                        at++
+                        index += length
+                    }
+                    byIndex
+                }
+                is StyledBreak -> {
+                    if (inline.hard) at++
+                    IntArray(0)
+                }
+            }
+        }
+    }
+
     private val lines: MutableList<TextLine> = mutableListOf()
 
     /** The pieces placed on the line being built, in order, before they are joined into runs. */
@@ -191,11 +251,12 @@ private class LineBreaking(
         var parts = mutableListOf<Fragment>()
         val word = StringBuilder()
         var wordStyle: StyledTextRun? = null
+        var wordLevel = paragraphLevel
 
         fun flushWord() {
             val style = wordStyle
             if (style == null || word.isEmpty()) return
-            parts += fragmentOf(style, word.toString(), space = false)
+            parts += fragmentOf(style, word.toString(), space = false, level = wordLevel)
             word.clear()
         }
 
@@ -206,7 +267,7 @@ private class LineBreaking(
             parts = mutableListOf()
         }
 
-        for (inline in content) {
+        for ((position, inline) in content.withIndex()) {
             when (inline) {
                 is StyledTextRun -> {
                     wordStyle = inline
@@ -214,16 +275,22 @@ private class LineBreaking(
                     while (index < inline.text.length) {
                         val codePoint = codePointAt(inline.text, index)
                         val character = codePointToString(codePoint)
+                        val level = levels[position][index]
                         index += character.length
                         when {
                             codePoint == SOFT_HYPHEN -> endToken(hyphenated = true)
                             isBreakingSpace(codePoint) -> {
                                 flushWord()
-                                parts += fragmentOf(inline, character, space = true)
+                                parts += fragmentOf(inline, character, space = true, level = level)
                                 endToken(hyphenated = false)
                             }
 
-                            else -> word.append(character)
+                            else -> {
+                                // A word whose characters change level is drawn as two runs.
+                                if (word.isNotEmpty() && level != wordLevel) flushWord()
+                                wordLevel = level
+                                word.append(character)
+                            }
                         }
                     }
                     flushWord()
@@ -290,10 +357,23 @@ private class LineBreaking(
         for (part in token.parts) {
             var index = 0
             while (index < part.text.length) {
-                val codePoint = codePointAt(part.text, index)
-                val character = codePointToString(codePoint)
-                index += character.length
-                val fragment = fragmentOf(part.style, character, part.space)
+                // One cluster at a time: a mark, a joiner or what follows a
+                // virama is never put on another line than what it is shaped with.
+                val start = index
+                var codePoint = codePointAt(part.text, index)
+                index += codePointToString(codePoint).length
+                while (index < part.text.length) {
+                    val next = codePointAt(part.text, index)
+                    val joins = UnicodeProperties.isMark(next) ||
+                        UnicodeProperties.isDefaultIgnorable(next) ||
+                        UnicodeProperties.isDefaultIgnorable(codePoint) ||
+                        UnicodeProperties.indicSyllabicCategory(codePoint) == "Virama"
+                    if (!joins) break
+                    codePoint = next
+                    index += codePointToString(next).length
+                }
+                val character = part.text.substring(start, index)
+                val fragment = fragmentOf(part.style, character, part.space, part.level)
                 if (fragments.isNotEmpty() && !fits(advance + fragment.width)) flush(hyphenate = false)
                 append(fragment)
             }
@@ -322,8 +402,8 @@ private class LineBreaking(
      */
     private fun flush(hyphenate: Boolean) {
         if (hyphenate && fragments.isNotEmpty()) {
-            val style = fragments.last().style
-            append(fragmentOf(style, HYPHEN, space = false))
+            val last = fragments.last()
+            append(fragmentOf(last.style, HYPHEN, space = false, level = last.level))
         }
         lines += lineOf()
         fragments.clear()
@@ -347,85 +427,94 @@ private class LineBreaking(
      * underline looks like.
      */
     private fun lineOf(): TextLine {
-        val groups = mutableListOf<Group>()
-        for (fragment in fragments) {
-            val last = groups.lastOrNull()
-            if (last != null && last.style.sameStyleAs(fragment.style)) {
-                last.text.append(fragment.text)
-            } else {
-                groups += Group(fragment.style, StringBuilder(fragment.text))
-            }
+        // L1: the white space at the end of a line is at the paragraph's level,
+        // so it sits at the end of the line in the paragraph's direction.
+        var hangingFrom = fragments.size
+        while (hangingFrom > 0 && fragments[hangingFrom - 1].space) hangingFrom--
+        val placed = fragments.mapIndexed { index, fragment ->
+            if (index >= hangingFrom && fragment.level != paragraphLevel) fragment.atLevel(paragraphLevel) else fragment
         }
 
-        val runs = mutableListOf<PlacedRun>()
-        val links = mutableListOf<LinkSpan>()
-        var x = indent
-        var contentEnd = indent
-        var openTarget: String? = null
-        for (group in groups) {
-            val text = group.text.toString()
-            val width = measure(group.style, text)
-            runs += PlacedRun(
-                text = text,
+        val groups = mutableListOf<Group>()
+        for (fragment in placed) {
+            val last = groups.lastOrNull()
+            if (last != null && last.level == fragment.level && last.style.sameStyleAs(fragment.style)) {
+                last.text.append(fragment.text)
+            } else {
+                groups += Group(fragment.style, StringBuilder(fragment.text), fragment.level)
+            }
+        }
+        val widths = groups.map { measure(it.style, it.text.toString()) }
+
+        // The white space that hangs off the end of the line, which an
+        // alignment does not count: whole groups of it, then the spaces that
+        // end the last group with something else in it.
+        var hanging = Pt.ZERO
+        for (index in groups.indices.reversed()) {
+            val text = groups[index].text.toString()
+            val spaces = trailingSpaces(text)
+            hanging += if (spaces.length == text.length) widths[index] else measure(groups[index].style, spaces)
+            if (spaces.length < text.length) break
+        }
+        val total = widths.fold(Pt.ZERO) { sum, width -> sum + width }
+        val rightToLeft = paragraphLevel % 2 == 1
+
+        // L2: the groups in the order they are drawn in, left to right.
+        val order = BidiParagraph.visualOrder(groups.map { it.level }.toIntArray())
+        val offsets = Array(groups.size) { Pt.ZERO }
+        // A right-to-left line begins at its right: its hanging white space is
+        // to the left of where its text starts, and its indent to the right.
+        var x = if (rightToLeft) Pt.ZERO - hanging else indent
+        for (index in order) {
+            offsets[index] = x
+            x += widths[index]
+        }
+
+        val runs = groups.mapIndexed { index, group ->
+            PlacedRun(
+                text = group.text.toString(),
                 font = group.style.font,
                 size = group.style.size,
                 color = group.style.color,
-                xOffset = x,
-                width = width,
+                xOffset = offsets[index],
+                width = widths[index],
                 decorations = decorationsOf(group.style),
+                rightToLeft = group.level % 2 == 1,
             )
-            val target = group.style.link
-            val start = x
-            x += width
-            // Runs that follow one another and point at the same place are one
-            // link. The span is grown to the end of this run rather than by its
-            // width: a sum of the same widths in a different order is not the
-            // same `Float`, and a link's box has to end where its text does.
+        }
+
+        // Runs drawn side by side that point at the same place are one link.
+        // The span is grown to the end of each run rather than by its width: a
+        // sum of the same widths in another order is not the same `Float`, and
+        // a link's box has to end where its text does.
+        val links = mutableListOf<LinkSpan>()
+        var openTarget: String? = null
+        for (index in order) {
+            val target = groups[index].style.link
+            val start = offsets[index]
+            val stop = start + widths[index]
             if (target != null) {
                 if (target == openTarget) {
-                    links[links.lastIndex] = links.last().let { open -> open.copy(width = x - open.xOffset) }
+                    links[links.lastIndex] = links.last().let { open -> open.copy(width = stop - open.xOffset) }
                 } else {
-                    links += LinkSpan(target, start, width)
+                    links += LinkSpan(target, start, widths[index])
                 }
             }
             openTarget = target
-            val hanging = trailingSpaces(text)
-            if (hanging.length < text.length) contentEnd = x - measure(group.style, hanging)
         }
 
         val styles = if (groups.isEmpty()) listOfNotNull(styleInForce) else groups.map { it.style }
         return TextLine(
             runs = runs,
-            width = contentEnd,
+            width = if (rightToLeft) total - hanging + indent else indent + total - hanging,
             ascent = Pt(styles.maxOfOrNull { metricsOf(it).ascent(it.size.value) } ?: 0.0f),
             descent = Pt(styles.minOfOrNull { metricsOf(it).descent(it.size.value) } ?: 0.0f),
             height = Pt((styles.maxOfOrNull { metricsOf(it).lineHeight(it.size.value) } ?: 0.0f) * lineHeightFactor),
             links = links,
+            rightToLeft = rightToLeft,
         )
     }
 
-    /**
-     * The rules drawn along a run of this style.
-     *
-     * PDF draws neither an underline nor a strike, and the metrics contract L4
-     * sees answers neither's position, so the geometry is decided here,
-     * out of quantities that contract does answer:
-     *
-     * - the **thickness** is a twentieth of the size, and the **underline**
-     *   crosses a tenth of the size below the baseline. Those are the values the
-     *   standard fourteen state for themselves — `UnderlineThickness 50` and
-     *   `UnderlinePosition -100` per 1000 units of glyph space, in every one of
-     *   the AFM tables this library carries.
-     * - the **strike** crosses halfway between the baseline and the top of the
-     *   font's tallest glyphs. It therefore crosses lowercase letters as well as
-     *   capitals: the x-height of the fourteen is around three quarters of their
-     *   ascent (Helvetica's 523 against 718), which puts the middle of the
-     *   lowercase text below the strike rather than above it.
-     *
-     * Both offsets name the **bottom edge** of a filled rectangle
-     * ([Decoration]), so the position the font states — which is where the rule
-     * is centred — has half a thickness taken off it.
-     */
     private fun decorationsOf(style: StyledTextRun): List<Decoration> {
         if (!style.underline && !style.strike) return emptyList()
         val size = style.size.value
@@ -442,8 +531,8 @@ private class LineBreaking(
 
     // ------------------------------------------------------------ measuring
 
-    private fun fragmentOf(style: StyledTextRun, text: String, space: Boolean): Fragment =
-        Fragment(style, text, measure(style, text), space)
+    private fun fragmentOf(style: StyledTextRun, text: String, space: Boolean, level: Int): Fragment =
+        Fragment(style, text, measure(style, text), space, level)
 
     private fun measure(style: StyledTextRun, text: String): Pt =
         if (text.isEmpty()) Pt.ZERO else Pt(metricsOf(style).widthOf(text, style.size.value))
@@ -464,7 +553,7 @@ private class LineBreaking(
      */
     private fun fits(extent: Pt): Boolean = extent.value <= columnWidth.value + FIT_TOLERANCE
 
-    private class Group(val style: StyledTextRun, val text: StringBuilder)
+    private class Group(val style: StyledTextRun, val text: StringBuilder, val level: Int)
 
     private companion object {
         const val HYPHEN: String = "-"
@@ -495,7 +584,11 @@ private class Fragment(
     val width: Pt,
     /** A space that ended a token, and so may hang off the end of a line. */
     val space: Boolean,
-)
+    /** The embedding level of the fragment's characters, all one. */
+    val level: Int,
+) {
+    fun atLevel(other: Int): Fragment = Fragment(style, text, width, space, other)
+}
 
 /** A unit of the tokenized content: either something to place, or a break to take. */
 private sealed interface Item
@@ -519,6 +612,9 @@ private data object HardBreak : Item
 
 /** SOFT HYPHEN — a break opportunity, and a hyphen only where the break is taken. */
 private const val SOFT_HYPHEN: Int = 0x00AD
+
+/** U+2028 LINE SEPARATOR: what a hard break is to the bidirectional algorithm. */
+private const val LINE_SEPARATOR: Int = 0x2028
 
 /**
  * Whether a line may break after this character.

@@ -9,6 +9,7 @@
 package io.pdfkt.core.content
 
 import io.pdfkt.core.obj.PdfArray
+import io.pdfkt.core.obj.PdfDict
 import io.pdfkt.core.obj.PdfName
 import io.pdfkt.core.obj.PdfObject
 import io.pdfkt.core.obj.PdfReal
@@ -158,6 +159,9 @@ public class ContentStreamBuilder {
     private var fontSelected: Boolean = false
 
     private var built: Boolean = false
+
+    /** How many `BDC` sequences are open and not yet ended by `EMC`. */
+    private var markedContent: Int = 0
 
     /**
      * Whether any operator has been written yet — the condition `d0` is admitted
@@ -514,6 +518,50 @@ public class ContentStreamBuilder {
     }
 
     /**
+     * `Ts` — "Set the text rise, Trise, to rise, which shall be a number
+     * expressed in unscaled text space units" (Table 103): how far above the
+     * baseline the glyphs shown next are drawn. A text state operator, free to
+     * appear inside a text object or outside one, like [textFont].
+     */
+    public fun textRise(rise: Double) {
+        beginOperatorOutsidePathObject("Ts")
+        operand(PdfReal(rise))
+        operator("Ts")
+    }
+
+    /**
+     * `BDC` — "Begin a marked-content sequence with an associated property
+     * list, terminated by a balancing EMC operator" (Table 352), the property
+     * list written inline as a dictionary. What this library marks is a `Span`
+     * with an `ActualText`: "text that is an exact replacement for the
+     * structure element and its children" (§14.9.4).
+     */
+    public fun beginMarkedContent(tag: PdfName, properties: PdfDict) {
+        beginOperatorOutsidePathObject("BDC")
+        operand(tag)
+        operand(properties)
+        operator("BDC")
+        markedContent++
+    }
+
+    /**
+     * `EMC` — "End a marked-content sequence begun by a BMC or BDC operator"
+     * (Table 352).
+     *
+     * @throws IllegalStateException if no sequence is open: "Marked-content
+     *   operators … shall be properly nested" (§14.6.1).
+     */
+    public fun endMarkedContent() {
+        beginOperatorOutsidePathObject("EMC")
+        check(markedContent > 0) {
+            "EMC with no marked-content sequence open: BDC and EMC shall be balanced " +
+                "(ISO 32000-2:2020 §14.6.1)"
+        }
+        operator("EMC")
+        markedContent--
+    }
+
+    /**
      * `BT` — "Begin a text object, initializing the text matrix, Tm, and the
      * text line matrix, Tlm, to the identity matrix" (Table 105).
      *
@@ -711,6 +759,10 @@ public class ContentStreamBuilder {
         check(!inTextObject) {
             "the content stream ends inside a text object: a text object ends with the ET " +
                 "operator (ISO 32000-2:2020 §9.4.1, §8.2 Figure 9)"
+        }
+        check(markedContent == 0) {
+            "$markedContent marked-content sequence(s) left open: BDC and EMC shall be balanced " +
+                "(ISO 32000-2:2020 §14.6.1)"
         }
         built = true
         return buffer.readByteArray()

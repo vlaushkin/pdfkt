@@ -44,6 +44,9 @@ import io.pdfkt.core.model.Rgb
  * @property decorations rules drawn along this run — underline, strike. They are
  *   paths, not glyphs, so the emitter draws them outside the text object
  *   (§8.2, Figure 9); the plan just says where.
+ * @property rightToLeft whether the run is at an odd embedding level of the
+ *   Unicode Bidirectional Algorithm (UAX #9 §3.3.7): its characters are drawn
+ *   from right to left, and [text] stays in the order they are read in.
  */
 public data class PlacedRun(
     public val text: String,
@@ -53,4 +56,5 @@ public data class PlacedRun(
     public val xOffset: Pt,
     public val width: Pt,
     public val decorations: List<Decoration> = emptyList(),
+    public val rightToLeft: Boolean = false,
 )

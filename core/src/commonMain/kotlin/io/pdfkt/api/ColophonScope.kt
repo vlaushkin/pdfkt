@@ -54,7 +54,7 @@ public class ColophonScope internal constructor(
      * the document has without the document being rendered twice.
      */
     public val numbering: PageNumbering,
-) : BlockContainerScope(TextAlign.Left) {
+) : BlockContainerScope(TextAlign.Start) {
 
     /**
      * "3 / 12" — the page and the count, as the reader of this page sees them.

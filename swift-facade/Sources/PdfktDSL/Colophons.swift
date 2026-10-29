@@ -79,7 +79,8 @@ public enum ColophonBuilder {
                 indentLeft: 0,
                 indentRight: 0,
                 spacingBefore: nil,
-                spacingAfter: nil
+                spacingAfter: nil,
+                direction: .auto_
             )
         }
     }

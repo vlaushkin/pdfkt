@@ -20,6 +20,7 @@ import io.pdfkt.core.block.ParagraphBlock
 import io.pdfkt.core.block.TableBlock
 import io.pdfkt.core.block.TableColumns
 import io.pdfkt.core.block.TextAlign
+import io.pdfkt.core.block.TextDirection
 import io.pdfkt.core.block.TextRun
 import io.pdfkt.core.model.Pt
 import io.pdfkt.core.model.Rgb
@@ -63,14 +64,18 @@ public interface BlockSink {
      *   right-aligned line stops short of the edge.
      * @param spacingBefore the gap above it, or null for the theme's.
      * @param spacingAfter the gap below it, or null for the theme's.
+     * @param direction which way it runs: [TextDirection.Auto] takes it from
+     *   its first letter that has one, so Hebrew and Arabic run right to left
+     *   and [TextAlign.Start] puts them flush right.
      */
     public fun paragraph(
         text: String,
-        align: TextAlign = TextAlign.Left,
+        align: TextAlign = TextAlign.Start,
         indentLeft: Pt = Pt.ZERO,
         indentRight: Pt = Pt.ZERO,
         spacingBefore: Pt? = null,
         spacingAfter: Pt? = null,
+        direction: TextDirection = TextDirection.Auto,
     ) {
         add(
             ParagraphBlock(
@@ -80,6 +85,7 @@ public interface BlockSink {
                 indentRight = indentRight,
                 spacingBefore = spacingBefore,
                 spacingAfter = spacingAfter,
+                direction = direction,
             ),
         )
     }
@@ -96,11 +102,12 @@ public interface BlockSink {
      * ```
      */
     public fun paragraph(
-        align: TextAlign = TextAlign.Left,
+        align: TextAlign = TextAlign.Start,
         indentLeft: Pt = Pt.ZERO,
         indentRight: Pt = Pt.ZERO,
         spacingBefore: Pt? = null,
         spacingAfter: Pt? = null,
+        direction: TextDirection = TextDirection.Auto,
         block: InlineScope.() -> Unit,
     ) {
         add(
@@ -111,6 +118,7 @@ public interface BlockSink {
                 indentRight = indentRight,
                 spacingBefore = spacingBefore,
                 spacingAfter = spacingAfter,
+                direction = direction,
             ),
         )
     }

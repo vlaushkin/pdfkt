@@ -169,7 +169,7 @@ public class DocumentScope internal constructor() : BlockSink {
      */
     public fun header(
         text: String,
-        align: TextAlign = TextAlign.Left,
+        align: TextAlign = TextAlign.Start,
         height: Pt = DEFAULT_BAND_HEIGHT,
         pages: BandPages = BandPages.All,
     ) {
@@ -196,7 +196,7 @@ public class DocumentScope internal constructor() : BlockSink {
     public fun header(
         firstPage: String,
         otherPages: String,
-        align: TextAlign = TextAlign.Left,
+        align: TextAlign = TextAlign.Start,
         height: Pt = DEFAULT_BAND_HEIGHT,
     ) {
         head = colophon(firstPage, otherPages, align, height)

@@ -55,7 +55,7 @@ class RichBandScheduleTest {
         assertEquals(BandPages.All, head.pages)
         assertEquals(BandPages.All, foot.pages)
         assertEquals(listOf(TextRun(HEAD)), head.lineOn(page = 1, of = 3).content)
-        assertEquals(TextAlign.Left, head.lineOn(page = 1, of = 3).align)
+        assertEquals(TextAlign.Start, head.lineOn(page = 1, of = 3).align)
         assertEquals(TextAlign.Right, foot.lineOn(page = 1, of = 3).align)
     }
 

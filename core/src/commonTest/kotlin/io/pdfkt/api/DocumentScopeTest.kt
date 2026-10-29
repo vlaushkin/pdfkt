@@ -76,7 +76,7 @@ class DocumentScopeTest {
 
         val first = blocks[1] as ParagraphBlock
         assertEquals(listOf(TextRun("This is the Q4 2026 summary.")), first.content)
-        assertEquals(TextAlign.Left, first.align)
+        assertEquals(TextAlign.Start, first.align)
 
         val second = blocks[2] as ParagraphBlock
         assertEquals(listOf(TextRun("Trailing note")), second.content)
@@ -188,7 +188,7 @@ class DocumentScopeTest {
 
         // The defaults are the two sides a running head and a running foot are
         // read on, and they differ.
-        assertEquals(TextAlign.Left, onFirst.align)
+        assertEquals(TextAlign.Start, onFirst.align)
         assertEquals(
             TextAlign.Right,
             (foot.content(PageNumbering(page = 1, pages = 3)).single() as ParagraphBlock).align,

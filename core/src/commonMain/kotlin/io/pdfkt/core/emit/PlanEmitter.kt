@@ -9,9 +9,11 @@
 package io.pdfkt.core.emit
 
 import io.pdfkt.core.content.ContentStreamBuilder
+import io.pdfkt.core.content.TextArrayElement
 import io.pdfkt.core.doc.PdfDocumentWriter
 import io.pdfkt.core.doc.pdfRectangle
 import io.pdfkt.core.font.FontCatalog
+import io.pdfkt.core.font.TextShow
 import io.pdfkt.core.image.ImageCatalog
 import io.pdfkt.core.image.ResolvedImage
 import io.pdfkt.core.model.Rect
@@ -23,6 +25,7 @@ import io.pdfkt.core.obj.PdfInt
 import io.pdfkt.core.obj.PdfName
 import io.pdfkt.core.obj.PdfObject
 import io.pdfkt.core.obj.PdfString
+import io.pdfkt.core.obj.pdfTextString
 import io.pdfkt.core.plan.PagePlan
 import io.pdfkt.core.plan.PlacedItem
 import io.pdfkt.core.plan.PlacedRun
@@ -190,7 +193,17 @@ public class PlanEmitter(
                 (item.x + run.xOffset).value.toDouble(),
                 item.y.value.toDouble(),
             )
-            content.showText(font.encode(run.text))
+            for (show in font.show(run.text, run.rightToLeft)) {
+                when (show) {
+                    // A string with nothing between its glyphs is the plain `Tj` it always was.
+                    is TextShow.Show -> (show.elements.singleOrNull() as? TextArrayElement.Codes)
+                        ?.let { content.showText(it.codes) }
+                        ?: content.showTextWithPositioning(show.elements)
+                    is TextShow.Rise -> content.textRise(show.amount * run.size.value.toDouble() / GLYPH_SPACE)
+                    is TextShow.BeginActualText -> content.beginMarkedContent(SPAN, actualText(show.text))
+                    TextShow.EndActualText -> content.endMarkedContent()
+                }
+            }
         }
         content.endText()
         for (run in item.runs) drawDecorations(content, item, run)
@@ -322,7 +335,21 @@ public class PlanEmitter(
         ),
     )
 
+    /**
+     * The property list of a `Span` that says what its glyphs stand for:
+     * "ActualText (Optional) text string — Text that is an exact replacement
+     * for the structure element and its children" (Table 355), which "may be
+     * … associated with a marked-content sequence" (§14.9.4).
+     */
+    private fun actualText(text: String): PdfDict = PdfDict(mapOf(ACTUAL_TEXT to pdfTextString(text)))
+
     private companion object {
+        val SPAN: PdfName = PdfName("Span")
+        val ACTUAL_TEXT: PdfName = PdfName("ActualText")
+
+        /** "the units of glyph space are one-thousandth of a unit of text space" (§9.2.4). */
+        const val GLYPH_SPACE: Double = 1000.0
+
         const val FINISHED: String =
             "this emitter is finished; one emitter writes the pages of one document"
     }

@@ -79,6 +79,31 @@ scopes with typed page numbering, an injectable `Clock`, a typed `Theme`,
 an emoji policy — and no silent loss: a glyph the font cannot draw is an
 error naming the character, never a blank page.
 
+### Text in any script, from the fonts of the system
+
+A supplied font may be TrueType or OpenType with CFF or CFF2 outlines, a
+variable font (drawn at its default instance), or one font of a collection:
+`FontRef.Supplied(bytes, id, index)`. Whatever its outlines, only the glyphs
+the document draws are embedded — a page of Chinese set in Noto Sans CJK
+carries a few kilobytes of it, not 20 MB.
+
+Text is shaped with the font's `GSUB` and `GPOS`: kerning and ligatures,
+marks placed on their letters, Arabic joining (Arabic, Persian, Urdu),
+Hebrew points, Thai and Lao, and the Indic syllable model for Devanagari,
+Bengali, Gurmukhi, Gujarati, Tamil, Telugu, Kannada and Malayalam.
+Paragraphs follow the Unicode Bidirectional Algorithm: Hebrew and Arabic
+run right to left among Latin and digits, a paragraph takes its direction
+from its first letter (`paragraph(text, direction = TextDirection.RightToLeft)`
+says it outright), and `TextAlign.Start` / `End` — the default is `Start`
+— are the sides a line begins and ends at. Where glyphs do not read back as
+their text (a conjunct, a reordered matra) they carry `/ActualText`, so the
+page copies and searches as the words that were written.
+
+Not yet: Khmer, Myanmar and the other scripts of the Universal Shaping
+Engine; line breaking inside Thai or CJK text without spaces; vertical
+text. Fonts that have only Apple's `morx` and no `GSUB` are drawn without
+their substitutions.
+
 An album, a report, an invoice are *application* vocabularies. They lower
 onto this one — `section()`, `landscape()`, `Margins`, `image(bytes, fit,
 rotationDegrees)`, `pageBreak()`, colophons — and live in the application.
@@ -178,7 +203,9 @@ Emoji and characters the face has no glyph for are the theme's too:
 draws each emoji from a picture your closure renders (Apple Color Emoji
 through CoreText, say), and anything `font` lacks from the first fallback
 that has it. In Kotlin the same is `Theme(emojiPolicy = EmojiPolicyRasterized(...))`
-and `FontFamily.of(face).withFallbacks(listOf(...))`.
+and `FontFamily.of(face).withFallbacks(listOf(...))`. A font of a collection
+is `Font(data:id:index:)`; `Paragraph { ... }.direction(.rightToLeft)` and
+`.alignment(.start)` / `.end` are the bidi side of a paragraph.
 
 Errors are real Swift errors: the engine's no-silent-loss refusals (an
 unencodable character, an emoji without a picture) arrive as catchable
@@ -247,8 +274,16 @@ tools rather than committed binaries:
   (Debian names), or point `PDFKT_TEST_FONT_DIR` at a directory containing
   `DejaVuSans.ttf`, `DejaVuSansMono.ttf` and `NotoColorEmoji.ttf`. A missing
   font fails the test that needs it rather than skipping.
+- **System fonts** — the format, shaping and bidi suites read fonts of macOS
+  and Android from `macos/` and `android/` under `PDFKT_TEST_FONT_DIR`, and
+  the Unicode Character Database files (`BidiCharacterTest.txt` among them)
+  from `ucd/` there. `core/scripts/generate_unicode_tables.py` regenerates
+  the Unicode tables from that directory.
 - **PDF tools** — `qpdf` and `poppler-utils` (`pdftotext`, `pdftoppm`) enable
   the render-verification tests; without them those tests skip and say so.
+- **Reference readers** — `hb-shape` (HarfBuzz) is what the shaper is compared
+  with, and fontTools (`PDFKT_FONTTOOLS_PYTHON`) what the CFF subsets are read
+  back with; without them those comparisons skip and say so.
 
 ## Licence
 
