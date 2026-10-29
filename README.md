@@ -16,7 +16,7 @@ repositories {
     maven("https://jitpack.io")
 }
 dependencies {
-    implementation("com.github.vlaushkin.pdfkt:pdfkt-core:0.0.5")
+    implementation("com.github.vlaushkin.pdfkt:pdfkt-core:0.0.6")
 }
 ```
 
