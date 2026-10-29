@@ -96,3 +96,9 @@ public fun SectionScope.imageFile(path: String, fit: ImageFit, rotationDegrees: 
 public fun Document.writeToFile(path: String) {
     writeTo(Path(path))
 }
+
+/**
+ * This theme with [policy] for emoji, for a caller on the Objective-C bridge,
+ * where a data class's `copy` arrives with every parameter and no defaults.
+ */
+public fun Theme.withEmojiPolicy(policy: EmojiPolicy): Theme = copy(emojiPolicy = policy)

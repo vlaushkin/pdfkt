@@ -155,27 +155,125 @@ public struct Theme {
     public var fontSize: Double
     public var lineHeight: Double
     public var textColor: Int
+    public var emojiPolicy: EmojiPolicy
+    public var fallbacks: [Font]
 
     /// - Parameters:
     ///   - font: the face, or `nil` for Helvetica.
     ///   - fontSize: the body size in points.
     ///   - lineHeight: the distance between baselines as a multiple of the size.
     ///   - textColor: `0xRRGGBB`.
-    public init(font: Font? = nil, fontSize: Double = 11, lineHeight: Double = 1.2, textColor: Int = 0x000000) {
+    ///   - emojiPolicy: what happens to emoji in the text; `.none` draws them
+    ///     with the text's own font, which refuses those it has no glyph for.
+    ///   - fallbacks: the fonts a character is drawn from when `font` has no
+    ///     glyph for it — the first of them that has one.
+    public init(
+        font: Font? = nil,
+        fontSize: Double = 11,
+        lineHeight: Double = 1.2,
+        textColor: Int = 0x000000,
+        emojiPolicy: EmojiPolicy = .none,
+        fallbacks: [Font] = []
+    ) {
         self.font = font
         self.fontSize = fontSize
         self.lineHeight = lineHeight
         self.textColor = textColor
+        self.emojiPolicy = emojiPolicy
+        self.fallbacks = fallbacks
     }
 
     internal var kotlin: Pdfkt.Theme {
-        let family = font.map { FontFamily.companion.of(font: $0.kotlin) } ?? FontFamily.companion.HELVETICA
+        var family = font.map { FontFamily.companion.of(font: $0.kotlin) } ?? FontFamily.companion.HELVETICA
+        if !fallbacks.isEmpty { family = family.withFallbacks(fallbacks: fallbacks.map { $0.kotlin }) }
         return ObjCInteropKt.themeOf(
             family: family,
             fontSize: fontSize,
             lineHeight: lineHeight,
             textColor: Int32(textColor)
+        ).withEmojiPolicy(policy: emojiPolicy.kotlin)
+    }
+}
+
+/// What happens to an emoji in the text.
+public enum EmojiPolicy {
+    /// Drawn with the text's own font, like any other character — refused,
+    /// naming it, when the font has no glyph for it.
+    case none
+    /// Removed from the text, whole.
+    case strip
+    /// Written out as its code points, `[U+1F44B]`.
+    case placeholder
+    /// Drawn in colour from a colour-bitmap font (CBDT/CBLC) handed over as bytes.
+    case colorFont(data: Data, id: String)
+    /// Drawn in colour from pictures your own code renders: `rasterizer` is
+    /// asked for each emoji sequence at `emPixels` to the em, and returns its
+    /// picture, or `nil` for one it cannot draw — which is refused, naming it.
+    /// It is called on the thread that writes the document.
+    case rasterized(id: String, emPixels: Int = 128, rasterizer: (String, Int) -> RasterGlyph?)
+
+    internal var kotlin: Pdfkt.EmojiPolicy {
+        switch self {
+        case .none: return EmojiPolicyNone.shared
+        case .strip: return EmojiPolicyStrip.shared
+        case .placeholder: return EmojiPolicyPlaceholder.shared
+        case let .colorFont(data, id):
+            return EmojiPolicyEmbeddedColorFont(fontBytes: data.toKotlinByteArray(), id: id)
+        case let .rasterized(id, emPixels, rasterizer):
+            return EmojiPolicyRasterized(
+                rasterizer: RasterizerBridge(rasterizer),
+                id: id,
+                emPixels: Int32(emPixels)
+            )
+        }
+    }
+}
+
+/// One emoji as a picture: a PNG and where it sits on the baseline, in pixels
+/// at the `emPixels` the rasterizer was asked for.
+public struct RasterGlyph {
+    public var png: Data
+    public var width: Int
+    public var height: Int
+    /// From the pen position to the picture's left edge.
+    public var bearingX: Int
+    /// From the baseline up to the picture's top edge.
+    public var bearingY: Int
+    /// How far the pen moves on.
+    public var advance: Int
+
+    public init(png: Data, width: Int, height: Int, bearingX: Int, bearingY: Int, advance: Int) {
+        self.png = png
+        self.width = width
+        self.height = height
+        self.bearingX = bearingX
+        self.bearingY = bearingY
+        self.advance = advance
+    }
+
+    internal var kotlin: Pdfkt.RasterGlyph {
+        Pdfkt.RasterGlyph(
+            png: png.toKotlinByteArray(),
+            width: Int32(width),
+            height: Int32(height),
+            bearingX: Int32(bearingX),
+            bearingY: Int32(bearingY),
+            advance: Int32(advance)
         )
+    }
+}
+
+/// A Swift closure as the core's rasterizer. One per policy conversion, so a
+/// document's emoji font sees one rasterizer throughout.
+internal final class RasterizerBridge: NSObject, EmojiRasterizer {
+    private let body: (String, Int) -> RasterGlyph?
+
+    init(_ body: @escaping (String, Int) -> RasterGlyph?) {
+        self.body = body
+    }
+
+    func rasterize(sequence: String, emPixels: Int32) -> Pdfkt.RasterGlyph? {
+        body(sequence, Int(emPixels))?.kotlin
     }
 }
 

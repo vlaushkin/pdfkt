@@ -1,4 +1,6 @@
 import XCTest
+import ImageIO
+import CoreGraphics
 import Pdfkt
 @testable import PdfktDSL
 
@@ -342,6 +344,68 @@ final class FacadeFidelityTests: XCTestCase {
         let out = dir.appendingPathComponent("album.pdf")
         try album(Image(url: photoURL)).write(to: out)
         XCTAssertEqual(try Data(contentsOf: out), byData)
+    }
+
+    /// Emoji in a title, through each policy the facade offers: refused by
+    /// the text's font with `.none`, gone with `.strip`, spelled out with
+    /// `.placeholder`, and drawn as a Type 3 font of pictures with
+    /// `.rasterized` — whose PNGs cross the bridge as one copy each.
+    func testEmojiPolicies() throws {
+        let png = try solidPng(side: 8)
+        var asked: [String] = []
+        func album(_ policy: PdfktDSL.EmojiPolicy) -> PdfktDSL.Document {
+            PdfktDSL.Document(
+                theme: PdfktDSL.Theme(emojiPolicy: policy),
+                date: Date(timeIntervalSince1970: TimeInterval(pinnedEpochSeconds)),
+                timeZone: TimeZone(secondsFromGMT: 0)!
+            ) {
+                Paragraph { Text("Hi 😄😁") }
+            }
+        }
+
+        XCTAssertThrowsError(try album(.none).toData())
+        let stripped = try album(.strip).toData()
+        XCTAssertFalse(String(decoding: stripped, as: UTF8.self).contains("/Type3"))
+        XCTAssertNoThrow(try album(.placeholder).toData())
+
+        let drawn = try album(.rasterized(id: "SystemEmoji", emPixels: 64) { sequence, emPixels in
+            asked.append(sequence)
+            XCTAssertEqual(emPixels, 64)
+            return PdfktDSL.RasterGlyph(png: png, width: 8, height: 8, bearingX: 0, bearingY: 7, advance: 8)
+        }).toData()
+        XCTAssertTrue(String(decoding: drawn, as: UTF8.self).contains("/Type3"))
+        XCTAssertEqual(Set(asked), ["😄", "😁"])
+
+        XCTAssertThrowsError(try album(.rasterized(id: "Nothing") { _, _ in nil }).toData())
+    }
+
+    /// Cyrillic in a Helvetica document, drawn from the fallback font.
+    func testFallbackFonts() throws {
+        let fontData = try Data(contentsOf: testFontURL)
+        func doc(_ fallbacks: [PdfktDSL.Font]) -> PdfktDSL.Document {
+            PdfktDSL.Document(theme: PdfktDSL.Theme(fallbacks: fallbacks)) {
+                Paragraph { Text("Hello, Привет") }
+            }
+        }
+        XCTAssertThrowsError(try doc([]).toData())
+        let pdf = try doc([Font(data: fontData, id: "sans")]).toData()
+        let text = String(decoding: pdf, as: UTF8.self)
+        XCTAssertTrue(text.contains("/Helvetica") && text.contains("/Type0"))
+    }
+
+    /// A PNG of one colour, `side` pixels square, encoded by ImageIO.
+    private func solidPng(side: Int) throws -> Data {
+        let context = CGContext(
+            data: nil, width: side, height: side, bitsPerComponent: 8, bytesPerRow: 0,
+            space: CGColorSpaceCreateDeviceRGB(), bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        )!
+        context.setFillColor(red: 1, green: 0.8, blue: 0, alpha: 1)
+        context.fill(CGRect(x: 0, y: 0, width: side, height: side))
+        let data = NSMutableData()
+        let destination = CGImageDestinationCreateWithData(data, "public.png" as CFString, 1, nil)!
+        CGImageDestinationAddImage(destination, context.makeImage()!, nil)
+        XCTAssertTrue(CGImageDestinationFinalize(destination))
+        return data as Data
     }
 
     func testAlbumSectionsWithSuppliedFont() throws {

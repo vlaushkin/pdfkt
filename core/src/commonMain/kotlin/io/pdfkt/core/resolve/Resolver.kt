@@ -343,18 +343,16 @@ public class Resolver(private val theme: Theme, private val fonts: FontCatalog) 
      *   cannot be drawn — the caller's own string, not the fragment.
      * @param offset where [text] begins in [source].
      */
-    private fun textRuns(text: String, style: InlineStyle, source: String, offset: Int): List<StyledTextRun> {
-        val runs = mutableListOf<StyledTextRun>()
-        for (segment in segmentEmoji(text)) {
+    private fun textRuns(text: String, style: InlineStyle, source: String, offset: Int): List<StyledTextRun> =
+        segmentEmoji(text).flatMap { segment ->
             val at = offset + segment.index
-            val policy = theme.emojiPolicy
-            val run = when (segment) {
-                is TextSegment.Plain -> checkedRun(segment.text, style, source, at, verbatim = true)
-                is TextSegment.Emoji -> when (policy) {
-                    EmojiPolicy.None -> checkedRun(segment.text, style, source, at, verbatim = true)
-                    EmojiPolicy.Strip -> null
+            when (segment) {
+                is TextSegment.Plain -> fallbackRuns(segment.text, style, source, at, verbatim = true)
+                is TextSegment.Emoji -> when (val policy = theme.emojiPolicy) {
+                    EmojiPolicy.None -> fallbackRuns(segment.text, style, source, at, verbatim = true)
+                    EmojiPolicy.Strip -> emptyList()
                     EmojiPolicy.Placeholder ->
-                        checkedRun(placeholderFor(segment.text), style, source, at, verbatim = false)
+                        fallbackRuns(placeholderFor(segment.text), style, source, at, verbatim = false)
 
                     // The emoji, whole, in the font the policy draws emoji from
                     // — an emoji-policy boundary, which is a change of font and
@@ -365,13 +363,53 @@ public class Resolver(private val theme: Theme, private val fonts: FontCatalog) 
                     // program's bitmaps or a rasterizer's pictures — is the
                     // policy's business and nothing below cares.
                     is EmojiPolicy.EmbeddedColorFont ->
-                        checkedRun(segment.text, style, source, at, verbatim = true, font = policy.font)
+                        listOfNotNull(checkedRun(segment.text, style, source, at, verbatim = true, font = policy.font))
 
                     is EmojiPolicy.Rasterized ->
-                        checkedRun(segment.text, style, source, at, verbatim = true, font = policy.font)
+                        listOfNotNull(checkedRun(segment.text, style, source, at, verbatim = true, font = policy.font))
                 }
             }
-            if (run != null) runs += run
+        }
+
+    /**
+     * [text] in [style]'s face, and where that face has no glyph for a
+     * character, in the first of the family's fallbacks that has one — as many
+     * runs as there are changes of font. A character no font of the family has
+     * is left with the face, which refuses it as it would without fallbacks.
+     */
+    private fun fallbackRuns(
+        text: String,
+        style: InlineStyle,
+        source: String,
+        offset: Int,
+        verbatim: Boolean,
+    ): List<StyledTextRun> {
+        val fallbacks = style.family.fallbacks
+        if (fallbacks.isEmpty()) return listOfNotNull(checkedRun(text, style, source, offset, verbatim))
+        val runs = mutableListOf<StyledTextRun>()
+        var start = 0
+        var current: FontRef? = null
+        forEachCodePoint(text) { index, codePoint ->
+            val held = current
+            val font = when {
+                // A space between two words of a fallback stays in it, so the
+                // words are one run rather than three.
+                held != null && held != style.font && codePoint == SPACE && fonts.canDraw(held, codePoint) -> held
+                fonts.canDraw(style.font, codePoint) -> style.font
+                else -> fallbacks.firstOrNull { fonts.canDraw(it, codePoint) } ?: style.font
+            }
+            if (held != null && font != held) {
+                runs +=
+                    listOfNotNull(
+                        checkedRun(text.substring(start, index), style, source, offset + start, verbatim, held),
+                    )
+                start = index
+            }
+            current = font
+        }
+        current?.let { font ->
+            runs +=
+                listOfNotNull(checkedRun(text.substring(start), style, source, offset + start, verbatim, font))
         }
         return runs
     }
@@ -584,3 +622,6 @@ private data class InlineStyle(
     /** The same style with nothing drawn along the text — for a list marker. */
     fun undecorated(): InlineStyle = copy(underline = false, strike = false, link = null)
 }
+
+/** U+0020 SPACE — what separates two words of a fallback font's script. */
+private const val SPACE: Int = 0x20

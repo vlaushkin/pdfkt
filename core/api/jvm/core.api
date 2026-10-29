@@ -298,6 +298,7 @@ public final class io/pdfkt/api/ObjCInteropKt {
 	public static final fun imageFile (Lio/pdfkt/api/SectionScope;Ljava/lang/String;Lio/pdfkt/core/block/ImageFit;I)V
 	public static final fun spacedParagraph (Lio/pdfkt/api/BlockSink;Lio/pdfkt/core/block/TextAlign;DDLjava/lang/Double;Ljava/lang/Double;Lkotlin/jvm/functions/Function1;)V
 	public static final fun themeOf (Lio/pdfkt/core/style/FontFamily;DDI)Lio/pdfkt/core/style/Theme;
+	public static final fun withEmojiPolicy (Lio/pdfkt/core/style/Theme;Lio/pdfkt/core/style/EmojiPolicy;)Lio/pdfkt/core/style/Theme;
 	public static final fun writeToFile (Lio/pdfkt/api/Document;Ljava/lang/String;)V
 }
 
@@ -2279,23 +2280,26 @@ public final class io/pdfkt/core/style/EmojiPolicy$Strip : io/pdfkt/core/style/E
 
 public final class io/pdfkt/core/style/FontFamily {
 	public static final field Companion Lio/pdfkt/core/style/FontFamily$Companion;
-	public fun <init> (Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;)V
-	public synthetic fun <init> (Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Ljava/util/List;)V
+	public synthetic fun <init> (Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Ljava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun component1 ()Lio/pdfkt/core/font/FontRef;
 	public final fun component2 ()Lio/pdfkt/core/font/FontRef;
 	public final fun component3 ()Lio/pdfkt/core/font/FontRef;
 	public final fun component4 ()Lio/pdfkt/core/font/FontRef;
-	public final fun copy (Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;)Lio/pdfkt/core/style/FontFamily;
-	public static synthetic fun copy$default (Lio/pdfkt/core/style/FontFamily;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;ILjava/lang/Object;)Lio/pdfkt/core/style/FontFamily;
+	public final fun component5 ()Ljava/util/List;
+	public final fun copy (Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Ljava/util/List;)Lio/pdfkt/core/style/FontFamily;
+	public static synthetic fun copy$default (Lio/pdfkt/core/style/FontFamily;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Lio/pdfkt/core/font/FontRef;Ljava/util/List;ILjava/lang/Object;)Lio/pdfkt/core/style/FontFamily;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun face (ZZ)Lio/pdfkt/core/font/FontRef;
 	public static synthetic fun face$default (Lio/pdfkt/core/style/FontFamily;ZZILjava/lang/Object;)Lio/pdfkt/core/font/FontRef;
 	public final fun getBold ()Lio/pdfkt/core/font/FontRef;
 	public final fun getBoldItalic ()Lio/pdfkt/core/font/FontRef;
+	public final fun getFallbacks ()Ljava/util/List;
 	public final fun getItalic ()Lio/pdfkt/core/font/FontRef;
 	public final fun getRegular ()Lio/pdfkt/core/font/FontRef;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
+	public final fun withFallbacks (Ljava/util/List;)Lio/pdfkt/core/style/FontFamily;
 }
 
 public final class io/pdfkt/core/style/FontFamily$Companion {

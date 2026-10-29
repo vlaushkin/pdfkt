@@ -36,13 +36,32 @@ import io.pdfkt.core.font.Standard14Name
  *   no separate one.
  * @property italic likewise for italic.
  * @property boldItalic likewise for both at once, defaulting to the bold face.
+ * @property fallbacks the fonts a character is drawn from when the face a run
+ *   is set in has no glyph for it — the first of them that has one, in order.
+ *   This is not faking a glyph: the character is drawn, from a font the caller
+ *   named for the purpose. A character none of them has is refused as it is
+ *   without fallbacks. Only fonts that draw text belong here — a standard font
+ *   or a supplied one; emoji are the emoji policy's.
  */
 public data class FontFamily(
     public val regular: FontRef,
     public val bold: FontRef = regular,
     public val italic: FontRef = regular,
     public val boldItalic: FontRef = bold,
+    public val fallbacks: List<FontRef> = emptyList(),
 ) {
+    init {
+        for (fallback in fallbacks) {
+            require(fallback is FontRef.Standard14 || fallback is FontRef.Supplied) {
+                "$fallback is not a font to fall back to for text: a fallback is a standard font or a " +
+                    "supplied font program, and emoji are drawn as the theme's EmojiPolicy says"
+            }
+        }
+    }
+
+    /** This family, drawing what its faces have no glyph for from [fallbacks], in that order. */
+    public fun withFallbacks(fallbacks: List<FontRef>): FontFamily = copy(fallbacks = fallbacks)
+
     /** The face for a given combination of the two style flags. */
     public fun face(bold: Boolean = false, italic: Boolean = false): FontRef = when {
         bold && italic -> boldItalic

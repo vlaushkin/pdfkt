@@ -85,6 +85,32 @@ public class FontCatalog {
     public fun metricsOf(ref: FontRef): FontMetrics = resolve(ref).metrics
 
     /**
+     * Whether [ref] has a glyph for [codePoint], asked without making it one of
+     * this document's fonts: a fallback that is asked and turns out not to have
+     * the character is not written into the file.
+     */
+    internal fun canDraw(ref: FontRef, codePoint: Int): Boolean = when (ref) {
+        is FontRef.Standard14 -> try {
+            ref.name.encode(codePointToString(codePoint))
+            true
+        } catch (_: UnencodableCharacterException) {
+            false
+        } catch (_: UnsupportedOperationException) {
+            false
+        }
+
+        is FontRef.Supplied -> {
+            val written = entries[keyOf(ref)]?.written as? EmbeddedFont
+            (written ?: probes.getOrPut(ref.id) { EmbeddedFont(ref) }).canDraw(codePoint)
+        }
+
+        is FontRef.ColorEmoji, is FontRef.RasterizedEmoji -> false
+    }
+
+    /** Supplied programs parsed only to be asked what they cover — see [canDraw]. */
+    private val probes: MutableMap<String, EmbeddedFont> = mutableMapOf()
+
+    /**
      * Every font this document has resolved, in the order it was first used.
      *
      * A snapshot: resolving more fonts afterwards does not change the list that

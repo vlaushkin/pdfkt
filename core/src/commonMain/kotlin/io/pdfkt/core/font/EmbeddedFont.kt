@@ -413,6 +413,9 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
      * is an error here instead — with the character and its position in [text],
      * per the no-silent-loss policy.
      */
+    /** Whether the program has a glyph for [codePoint] — asked without showing it. */
+    fun canDraw(codePoint: Int): Boolean = program.glyphIdOf(codePoint) != TrueTypeSubset.NOTDEF
+
     private fun glyphIdOf(codePoint: Int, text: String, index: Int): Int {
         val glyphId = program.glyphIdOf(codePoint)
         if (glyphId == TrueTypeSubset.NOTDEF) {

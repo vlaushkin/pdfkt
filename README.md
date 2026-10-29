@@ -16,7 +16,7 @@ repositories {
     maven("https://jitpack.io")
 }
 dependencies {
-    implementation("com.github.vlaushkin.pdfkt:pdfkt-core:0.0.4")
+    implementation("com.github.vlaushkin.pdfkt:pdfkt-core:0.0.5")
 }
 ```
 
@@ -172,6 +172,13 @@ let album = Document(theme: Theme(font: nunito, lineHeight: 1.5)) {
     }
 }
 ```
+
+Emoji and characters the face has no glyph for are the theme's too:
+`Theme(font:, emojiPolicy: .rasterized(id: "SystemEmoji") { sequence, emPixels in ... }, fallbacks: [cjk])`
+draws each emoji from a picture your closure renders (Apple Color Emoji
+through CoreText, say), and anything `font` lacks from the first fallback
+that has it. In Kotlin the same is `Theme(emojiPolicy = EmojiPolicyRasterized(...))`
+and `FontFamily.of(face).withFallbacks(listOf(...))`.
 
 Errors are real Swift errors: the engine's no-silent-loss refusals (an
 unencodable character, an emoji without a picture) arrive as catchable
