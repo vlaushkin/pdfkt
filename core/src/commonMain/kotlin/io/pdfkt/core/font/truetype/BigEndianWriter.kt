@@ -79,6 +79,12 @@ internal class BigEndianWriter(initialCapacity: Int = INITIAL_CAPACITY) {
         size += value.size
     }
 
+    /** Takes back everything written from [length] on. */
+    fun truncate(length: Int) {
+        require(length in 0..size) { "cannot cut $size bytes down to $length" }
+        size = length
+    }
+
     /** Appends [count] zero bytes. */
     fun zeros(count: Int) {
         require(count >= 0) { "cannot write $count zero bytes" }

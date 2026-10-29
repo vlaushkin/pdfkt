@@ -78,6 +78,9 @@ public sealed interface FontRef {
      *   a layout name its fonts freely without holding on to objects; two
      *   different programs under one id are an error rather than a document
      *   drawn with the wrong glyphs.
+     * @property index which font of a font collection — "a TTC file can
+     *   contain multiple OpenType fonts" — the reference is to, counting from
+     *   0. A file that is a single font has only font 0.
      *
      * Not a data class, and the bytes are not readable back: equality over a
      * multi-megabyte array is a cost paid at every comparison for an answer [id]
@@ -87,7 +90,10 @@ public sealed interface FontRef {
      * (clauses 9.7 and 9.9, the OpenType specification), and nothing else in the
      * library reads it.
      */
-    public class Supplied(internal val bytes: ByteArray, public val id: String) : FontRef {
+    public class Supplied(internal val bytes: ByteArray, public val id: String, public val index: Int) : FontRef {
+        /** The font of a file that holds one font. */
+        public constructor(bytes: ByteArray, id: String) : this(bytes, id, 0)
+
         init {
             require(id.isNotEmpty()) {
                 "a supplied font needs an id: it is what names the program within one document " +
@@ -96,6 +102,10 @@ public sealed interface FontRef {
             require(bytes.isNotEmpty()) {
                 "a supplied font needs the bytes of a font program; the id \"$id\" arrived with none " +
                     "(ISO 32000-2:2020 §9.9 \"Embedded font programs\")"
+            }
+            require(index >= 0) {
+                "the font \"$id\" was given the index $index; an index picks one font of a font " +
+                    "collection (a .ttc file), counting from 0"
             }
         }
 

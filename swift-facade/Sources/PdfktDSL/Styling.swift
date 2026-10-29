@@ -139,8 +139,14 @@ public enum ListMarker {
 public struct Font {
     internal let kotlin: FontRef
 
-    public init(data: Data, id: String) {
-        self.kotlin = FontRefSupplied(bytes: data.toKotlinByteArray(), id: id)
+    /// - Parameters:
+    ///   - data: the bytes of a font file: TrueType or OpenType, or a
+    ///     collection of them (`.ttc`).
+    ///   - id: names the font within one document.
+    ///   - index: which font of a collection, counting from 0; 0 for a file
+    ///     that holds one font.
+    public init(data: Data, id: String, index: Int = 0) {
+        self.kotlin = FontRefSupplied(bytes: data.toKotlinByteArray(), id: id, index: Int32(index))
     }
 }
 

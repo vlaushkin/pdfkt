@@ -9,6 +9,8 @@
 package io.pdfkt.core.font
 
 import io.pdfkt.core.filter.flateStream
+import io.pdfkt.core.font.cff.CffFont
+import io.pdfkt.core.font.cff.CffSubset
 import io.pdfkt.core.font.truetype.Glyph
 import io.pdfkt.core.font.truetype.PostTable
 import io.pdfkt.core.font.truetype.TrueTypeFont
@@ -83,7 +85,7 @@ import io.pdfkt.core.obj.PdfString
  * with should not pay for parsing several megabytes of it.
  */
 internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
-    private val program: TrueTypeFont by lazy(LazyThreadSafetyMode.NONE) { TrueTypeFont.parse(ref.bytes) }
+    private val program: TrueTypeFont by lazy(LazyThreadSafetyMode.NONE) { TrueTypeFont.parse(ref.bytes, ref.index) }
 
     /**
      * The `post` table, if the program has one. Table 124 does not require it of
@@ -105,6 +107,23 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
      * everything written from this map.
      */
     private val shownGlyphs: MutableMap<Int, Int> = LinkedHashMap()
+
+    /**
+     * The program's CFF or CFF2 outlines, or null for a font with TrueType
+     * outlines. "OpenType fonts may have TrueType or CFF outlines", and which
+     * one decides the CIDFont's subtype and the stream its program is in.
+     */
+    private val compactOutlines: CffFont? by lazy(LazyThreadSafetyMode.NONE) {
+        program.directory.readerOrNull("CFF ")?.let { CffFont.parseCff(it) }
+            ?: program.directory.readerOrNull("CFF2")?.let { CffFont.parseCff2(it) }
+    }
+
+    /** The program written into the file, of one outline format or the other. */
+    private sealed interface Subset {
+        class TrueType(val subset: TrueTypeSubset) : Subset
+
+        class Compact(val bytes: ByteArray) : Subset
+    }
 
     /** Whether [fontDictionary] has written the subset that [shownGlyphs] fixed. */
     private var written: Boolean = false
@@ -184,9 +203,19 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
      *   dictionary a merge would have to duplicate.
      */
     override fun fontDictionary(define: (PdfObject) -> PdfRef): PdfDict {
-        val subset = TrueTypeSubset.of(program, shownGlyphs.keys)
         written = true
-        val name = PdfName(subsetFontName(ref.id, subset.glyphIds))
+        val cff = compactOutlines
+        val subset: Subset
+        val name: PdfName
+        if (cff == null) {
+            val trueType = TrueTypeSubset.of(program, shownGlyphs.keys)
+            name = PdfName(subsetFontName(ref.id, trueType.glyphIds))
+            subset = Subset.TrueType(trueType)
+        } else {
+            val glyphIds = (shownGlyphs.keys + TrueTypeSubset.NOTDEF).sorted()
+            name = PdfName(subsetFontName(ref.id, glyphIds))
+            subset = Subset.Compact(CffSubset.of(cff, shownGlyphs.keys, name.name))
+        }
         val descriptor = define(fontDescriptor(name, subset, define))
         val descendant = define(cidFont(name, subset, descriptor, define))
         val toUnicode = define(flateStream(TO_UNICODE_STREAM_DICT, toUnicodeCMap(unicodeMappings())))
@@ -219,22 +248,23 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
      * `DW` is left out: its default is 1000, and every CID a page can show is in
      * `W`, since `W` is written from the glyphs the pages showed.
      */
-    private fun cidFont(
-        name: PdfName,
-        subset: TrueTypeSubset,
-        descriptor: PdfRef,
-        define: (PdfObject) -> PdfRef,
-    ): PdfDict = PdfDict(
-        mapOf(
-            TYPE to FONT,
-            SUBTYPE to CID_FONT_TYPE_2,
-            BASE_FONT to name,
-            CID_SYSTEM_INFO to ADOBE_IDENTITY_0,
-            FONT_DESCRIPTOR to descriptor,
-            WIDTHS to widths(),
-            CID_TO_GID_MAP to define(flateStream(PdfDict(emptyMap()), cidToGidMap(subset))),
-        ),
-    )
+    private fun cidFont(name: PdfName, subset: Subset, descriptor: PdfRef, define: (PdfObject) -> PdfRef): PdfDict =
+        PdfDict(
+            buildMap {
+                put(TYPE, FONT)
+                put(SUBTYPE, if (subset is Subset.TrueType) CID_FONT_TYPE_2 else CID_FONT_TYPE_0)
+                put(BASE_FONT, name)
+                put(CID_SYSTEM_INFO, ADOBE_IDENTITY_0)
+                put(FONT_DESCRIPTOR, descriptor)
+                put(WIDTHS, widths())
+                // "CIDToGIDMap … (Optional; Type 2 CIDFonts only)": a Type 0
+                // CIDFont maps its CIDs through the charset of its program, which
+                // [CffSubset] writes with the CIDs this font shows.
+                if (subset is Subset.TrueType) {
+                    put(CID_TO_GID_MAP, define(flateStream(PdfDict(emptyMap()), cidToGidMap(subset.subset))))
+                }
+            },
+        )
 
     /**
      * The font descriptor of Table 120, for the CIDFont: "a font descriptor
@@ -264,9 +294,17 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
      * decoded using the filters specified by the stream's Filter entry"
      * (Table 125).
      */
-    private fun fontDescriptor(name: PdfName, subset: TrueTypeSubset, define: (PdfObject) -> PdfRef): PdfDict {
+    private fun fontDescriptor(name: PdfName, subset: Subset, define: (PdfObject) -> PdfRef): PdfDict {
         val fontFile = define(
-            flateStream(PdfDict(mapOf(LENGTH_1 to PdfInt(subset.bytes.size.toLong()))), subset.bytes),
+            when (subset) {
+                is Subset.TrueType -> flateStream(
+                    PdfDict(mapOf(LENGTH_1 to PdfInt(subset.subset.bytes.size.toLong()))),
+                    subset.subset.bytes,
+                )
+                // Table 125: FontFile3 with "CIDFontType0C — Type 0 CIDFont
+                // program represented in the Compact Font Format".
+                is Subset.Compact -> flateStream(PdfDict(mapOf(SUBTYPE to CID_FONT_TYPE_0C)), subset.bytes)
+            },
         )
         return PdfDict(
             buildMap {
@@ -287,7 +325,7 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
                 put(DESCENT, PdfReal(descent))
                 capHeight()?.let { put(CAP_HEIGHT, PdfReal(it)) }
                 put(STEM_V, PdfInt(UNKNOWN_STEM_THICKNESS))
-                put(FONT_FILE_2, fontFile)
+                put(if (subset is Subset.TrueType) FONT_FILE_2 else FONT_FILE_3, fontFile)
             },
         )
     }
@@ -482,6 +520,9 @@ internal class EmbeddedFont(private val ref: FontRef.Supplied) : WrittenFont {
         val FONT: PdfName = PdfName("Font")
         val TYPE_0: PdfName = PdfName("Type0")
         val CID_FONT_TYPE_2: PdfName = PdfName("CIDFontType2")
+        val CID_FONT_TYPE_0: PdfName = PdfName("CIDFontType0")
+        val CID_FONT_TYPE_0C: PdfName = PdfName("CIDFontType0C")
+        val FONT_FILE_3: PdfName = PdfName("FontFile3")
         val BASE_FONT: PdfName = PdfName("BaseFont")
         val ENCODING: PdfName = PdfName("Encoding")
         val IDENTITY_H: PdfName = PdfName("Identity-H")

@@ -169,10 +169,12 @@ internal class TrueTypeFont private constructor(
          *   this library can read, saying which field made it say so. A font is
          *   input from outside; refusing it with a reason is the only honest
          *   alternative to drawing a document with the wrong glyphs in it.
+         * @param index which font of a font collection to read; 0, the only
+         *   font there is, for a file that is not a collection.
          */
-        fun parse(bytes: ByteArray): TrueTypeFont {
+        fun parse(bytes: ByteArray, index: Int = 0): TrueTypeFont {
             val file = BigEndianReader.over(bytes, "the font program")
-            val directory = TableDirectory.parse(file)
+            val directory = TableDirectory.parse(file, index)
             val head = HeadTable.parse(directory.readerOf("head"))
             val hhea = HheaTable.parse(directory.readerOf("hhea"))
             val maxp = MaxpTable.parse(directory.readerOf("maxp"))

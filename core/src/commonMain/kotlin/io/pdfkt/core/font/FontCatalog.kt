@@ -243,6 +243,14 @@ public class FontCatalog {
                     "program within one document, so this document would draw one of the two with the " +
                     "other's glyphs. Give the second program an id of its own"
             }
+            if (resolved is FontRef.Supplied && incoming is FontRef.Supplied) {
+                require(resolved.index == incoming.index) {
+                    "fonts ${resolved.index} and ${incoming.index} of one font collection supplied under " +
+                        "the id \"${incoming.id}\": an id names one font within one document, so this " +
+                        "document would draw one of the two with the other's glyphs. Give each font of " +
+                        "the collection an id of its own"
+                }
+            }
         }
 
         /**

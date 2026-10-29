@@ -1,0 +1,97 @@
+# Text shaped by pdfkt and by HarfBuzz's hb-shape, glyph for glyph:
+#   font file (under PDFKT_TEST_FONT_DIR) | font index | ltr or rtl | text
+# Fonts that carry an AAT 'morx' table are shaped by hb-shape with that table
+# rather than GSUB, so they are no comparison for this library, which reads
+# GSUB; of the Sangam MN faces of macOS, Kannada and Malayalam are such fonts.
+DejaVuSans.ttf|0|ltr|AVATAR office Wave
+DejaVuSans.ttf|0|ltr|Привет, мир! Ёлка
+DejaVuSans.ttf|0|ltr|é ä ñ Å
+DejaVuSans.ttf|0|ltr|fi fl ffi ffl
+macos/SFNS.ttf|0|ltr|Typography AVAWAY office
+android/NotoSansCJK-Regular.ttc|0|ltr|汉字测试 日本語 한국어
+android/NotoNaskhArabic-Regular.ttf|0|rtl|السلام عليكم
+android/NotoNaskhArabic-Regular.ttf|0|rtl|لا إله إلا
+android/NotoNaskhArabic-Regular.ttf|0|rtl|مرحبا بالعالم
+android/NotoNaskhArabic-Regular.ttf|0|rtl|بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+android/NotoNaskhArabic-Regular.ttf|0|rtl|كتب يكتب مكتوب كتاب
+android/NotoNaskhArabic-Regular.ttf|0|rtl|فلسطين القاهرة محمد
+android/NotoNaskhArabic-Regular.ttf|0|rtl|پاکستان گفتگو چای ژاله
+android/NotoNaskhArabic-Regular.ttf|0|rtl|ـبـ عـ ة ى ئ ؤ
+macos/SFArabic.ttf|0|rtl|السلام عليكم
+macos/SFArabic.ttf|0|rtl|بِسْمِ اللَّهِ
+android/NotoSansHebrew-Regular.ttf|0|rtl|שלום עולם
+android/NotoSansHebrew-Regular.ttf|0|rtl|שָׁלוֹם בְּרֵאשִׁית
+android/NotoSansHebrew-Regular.ttf|0|rtl|יִשְׂרָאֵל תּוֹרָה
+macos/SFHebrew.ttf|0|rtl|שָׁלוֹם עוֹלָם
+android/NotoSansThai-Regular.ttf|0|ltr|สวัสดีครับ
+android/NotoSansThai-Regular.ttf|0|ltr|น้ำ กำ ทำ ค่ำ
+android/NotoSansThai-Regular.ttf|0|ltr|ที่นี่ ปู่ ญี่ปุ่น ฎีกา
+android/NotoSansThai-Regular.ttf|0|ltr|ภาษาไทย เป็น ภาษา ที่ สวยงาม
+android/NotoSerifThai-Regular.ttf|0|ltr|น้ำใจ ปั้น ฝั่ง
+android/NotoSansLao-Regular.ttf|0|ltr|ສະບາຍດີ
+android/NotoSansLao-Regular.ttf|0|ltr|ນ້ຳ ຄຳ ພາສາລາວ
+android/NotoSerifLao-Regular.ttf|0|ltr|ສະບາຍດີ ນ້ຳ
+android/NotoSansDevanagari-VF.ttf|0|ltr|नमस्ते दुनिया
+android/NotoSansDevanagari-VF.ttf|0|ltr|हिन्दी भारत की राष्ट्रभाषा है
+android/NotoSansDevanagari-VF.ttf|0|ltr|कि स्कि क्षि र्क र्कि र्त्स्न्य
+android/NotoSansDevanagari-VF.ttf|0|ltr|धर्म कर्म पूर्ण प्रेम श्री द्ध द्व क्ष त्र ज्ञ
+android/NotoSansDevanagari-VF.ttf|0|ltr|क़ ख़ ग़ ज़ ड़ ढ़ फ़ य़ ऩ ऱ ऴ
+android/NotoSansDevanagari-VF.ttf|0|ltr|संस्कृत अँगरेज़ी ऋषि ॐ
+android/NotoSansDevanagari-VF.ttf|0|ltr|क्‍ष क्‌ष र्‍क
+macos/Kohinoor.ttc|0|ltr|नमस्ते हिन्दी धर्म स्कि
+android/NotoSansBengali-VF.ttf|0|ltr|বাংলা ভাষা আমার সোনার বাংলা
+android/NotoSansBengali-VF.ttf|0|ltr|কি কো কৌ র্ক ক্ষ জ্ঞ স্ত্র
+android/NotoSansBengali-VF.ttf|0|ltr|রবীন্দ্রনাথ ঠাকুর ্য র‍্য
+android/NotoSansGurmukhi-VF.ttf|0|ltr|ਪੰਜਾਬੀ ਗੁਰਮੁਖੀ ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ
+android/NotoSansGurmukhi-VF.ttf|0|ltr|ਕਿ ਪ੍ਰ ਦ੍ਵ ਖ਼ ਸ਼
+android/NotoSansGujarati-Regular.ttf|0|ltr|ગુજરાતી ભાષા નમસ્તે
+android/NotoSansGujarati-Regular.ttf|0|ltr|કિ ર્ક ક્ષ જ્ઞ શ્રી
+android/NotoSansTamil-VF.ttf|0|ltr|தமிழ் மொழி வணக்கம்
+android/NotoSansTamil-VF.ttf|0|ltr|கொ கோ கௌ க்ஷ ஸ்ரீ
+android/NotoSansTelugu-VF.ttf|0|ltr|తెలుగు భాష నమస్కారం
+android/NotoSansTelugu-VF.ttf|0|ltr|కై క్ష ర్క క్ర స్త్రీ
+android/NotoSansKannada-VF.ttf|0|ltr|ಕನ್ನಡ ಭಾಷೆ ನಮಸ್ಕಾರ
+android/NotoSansKannada-VF.ttf|0|ltr|ಕೀ ಕೊ ಕೋ ರ್ಕ ಕ್ಷ ಸ್ತ್ರೀ
+android/NotoSansMalayalam-VF.ttf|0|ltr|മലയാളം ഭാഷ നമസ്കാരം
+android/NotoSansMalayalam-VF.ttf|0|ltr|കൊ കോ കൌ ക്ര ക്ഷ ൎക ന്റ
+# Article 1 of the Universal Declaration of Human Rights, in the fonts of both platforms.
+android/NotoSansDevanagari-VF.ttf|0|ltr|सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतन्त्रता और समानता प्राप्त है। उन्हें बुद्धि और अन्तरात्मा की देन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से बर्ताव करना चाहिये।
+android/NotoSansDevanagariUI-VF.ttf|0|ltr|सर्व मानवी व्यक्ति जन्मतःच स्वतंत्र आहेत व त्यांना समान प्रतिष्ठा व समान अधिकार आहेत.
+macos/Kohinoor.ttc|0|ltr|सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतन्त्रता और समानता प्राप्त है।
+macos/Kohinoor.ttc|2|ltr|उन्हें बुद्धि और अन्तरात्मा की देन प्राप्त है और परस्पर उन्हें भाईचारे के भाव से बर्ताव करना चाहिये।
+macos/ITFDevanagari.ttc|0|ltr|सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतन्त्रता
+macos/Devanagari Sangam MN.ttc|0|ltr|सभी मनुष्यों को गौरव और अधिकारों के मामले में जन्मजात स्वतन्त्रता
+android/NotoSansBengali-VF.ttf|0|ltr|সমস্ত মানুষ স্বাধীনভাবে সমান মর্যাদা এবং অধিকার নিয়ে জন্মগ্রহণ করে। তাঁদের বিবেক এবং বুদ্ধি আছে; সুতরাং সকলেরই একে অপরের প্রতি ভ্রাতৃত্বসুলভ মনোভাব নিয়ে আচরণ করা উচিত।
+android/NotoSansBengaliUI-VF.ttf|0|ltr|সমস্ত মানুষ স্বাধীনভাবে সমান মর্যাদা এবং অধিকার নিয়ে জন্মগ্রহণ করে।
+macos/KohinoorBangla.ttc|0|ltr|সমস্ত মানুষ স্বাধীনভাবে সমান মর্যাদা এবং অধিকার নিয়ে জন্মগ্রহণ করে। তাঁদের বিবেক এবং বুদ্ধি আছে;
+macos/Bangla Sangam MN.ttc|0|ltr|সমস্ত মানুষ স্বাধীনভাবে সমান মর্যাদা এবং অধিকার নিয়ে জন্মগ্রহণ করে।
+android/NotoSansGurmukhi-VF.ttf|0|ltr|ਸਾਰਾ ਮਨੁੱਖੀ ਪਰਿਵਾਰ ਆਪਣੀ ਮਹਿਮਾ, ਸ਼ਾਨ ਅਤੇ ਹੱਕਾਂ ਦੇ ਪੱਖੋਂ ਜਨਮ ਤੋਂ ਹੀ ਆਜ਼ਾਦ ਹੈ ਅਤੇ ਸੁਤੇ ਸਿੱਧ ਸਾਰੇ ਲੋਕ ਬਰਾਬਰ ਹਨ।
+macos/Gurmukhi Sangam MN.ttc|0|ltr|ਸਾਰਾ ਮਨੁੱਖੀ ਪਰਿਵਾਰ ਆਪਣੀ ਮਹਿਮਾ, ਸ਼ਾਨ ਅਤੇ ਹੱਕਾਂ ਦੇ ਪੱਖੋਂ
+android/NotoSansGujarati-Regular.ttf|0|ltr|પ્રતિષ્ઠા અને અધિકારોની દૃષ્ટિએ સર્વ માનવો જન્મથી સ્વતંત્ર અને સમાન હોય છે.
+android/NotoSansGujarati-Bold.ttf|0|ltr|પ્રતિષ્ઠા અને અધિકારોની દૃષ્ટિએ સર્વ માનવો જન્મથી સ્વતંત્ર અને સમાન હોય છે.
+macos/KohinoorGujarati.ttc|0|ltr|પ્રતિષ્ઠા અને અધિકારોની દૃષ્ટિએ સર્વ માનવો જન્મથી સ્વતંત્ર અને સમાન હોય છે.
+macos/Gujarati Sangam MN.ttc|0|ltr|પ્રતિષ્ઠા અને અધિકારોની દૃષ્ટિએ સર્વ માનવો
+android/NotoSansTamil-VF.ttf|0|ltr|மனிதப் பிறவியினர் சகலரும் சுதந்திரமாகவே பிறக்கின்றனர்; அவர்கள் மதிப்பிலும், உரிமைகளிலும் சமமானவர்கள்.
+android/NotoSansTamilUI-VF.ttf|0|ltr|மனிதப் பிறவியினர் சகலரும் சுதந்திரமாகவே பிறக்கின்றனர்;
+macos/Tamil Sangam MN.ttc|0|ltr|மனிதப் பிறவியினர் சகலரும் சுதந்திரமாகவே பிறக்கின்றனர்;
+android/NotoSansTelugu-VF.ttf|0|ltr|ప్రతిపత్తిస్వత్వముల విషయమున మానవులెల్లరును జన్మతః స్వతంత్రులును సమానులును నగుదురు.
+macos/KohinoorTelugu.ttc|0|ltr|ప్రతిపత్తిస్వత్వముల విషయమున మానవులెల్లరును జన్మతః స్వతంత్రులును సమానులును నగుదురు.
+macos/Telugu Sangam MN.ttc|0|ltr|ప్రతిపత్తిస్వత్వముల విషయమున మానవులెల్లరును
+android/NotoSansKannada-VF.ttf|0|ltr|ಎಲ್ಲಾ ಮಾನವರೂ ಸ್ವತಂತ್ರರಾಗಿಯೇ ಜನಿಸಿದ್ದಾರೆ. ಹಾಗೂ ಘನತೆ ಮತ್ತು ಹಕ್ಕುಗಳಲ್ಲಿ ಸಮಾನರಾಗಿದ್ದಾರೆ.
+macos/NotoSansKannada.ttc|0|ltr|ಎಲ್ಲಾ ಮಾನವರೂ ಸ್ವತಂತ್ರರಾಗಿಯೇ ಜನಿಸಿದ್ದಾರೆ.
+android/NotoSansMalayalam-VF.ttf|0|ltr|മനുഷ്യരെല്ലാവരും തുല്യാവകാശങ്ങളോടും അന്തസ്സോടും സ്വാതന്ത്ര്യത്തോടുംകൂടി ജനിച്ചിട്ടുള്ളവരാണ്‌.
+android/NotoSansMalayalamUI-VF.ttf|0|ltr|മനുഷ്യരെല്ലാവരും തുല്യാവകാശങ്ങളോടും അന്തസ്സോടും
+android/NotoNaskhArabic-Regular.ttf|0|rtl|يولد جميع الناس أحرارًا متساوين في الكرامة والحقوق. وقد وهبوا عقلاً وضميرًا وعليهم أن يعامل بعضهم بعضًا بروح الإخاء.
+android/NotoNaskhArabic-Regular.ttf|0|rtl|تمام افراد بشر آزاد به دنیا می‌آیند و از لحاظ حیثیت و حقوق با هم برابرند.
+android/NotoNaskhArabic-Regular.ttf|0|rtl|تمام انسان آزاد اور حقوق و عزت کے اعتبار سے برابر پیدا ہوئے ہیں۔
+macos/SFArabic.ttf|0|rtl|يولد جميع الناس أحرارًا متساوين في الكرامة والحقوق.
+macos/SFArabic.ttf|0|rtl|تمام افراد بشر آزاد به دنیا می‌آیند
+android/NotoSansHebrew-Regular.ttf|0|rtl|כל בני האדם נולדו בני חורין ושווים בערכם ובזכויותיהם.
+macos/SFHebrew.ttf|0|rtl|כל בני האדם נולדו בני חורין ושווים בערכם ובזכויותיהם.
+android/NotoSansThai-Regular.ttf|0|ltr|มนุษย์ทั้งหลายเกิดมามีอิสระและเสมอภาคกันในเกียรติศักดิ์และสิทธิ
+android/NotoSansThaiUI-Bold.ttf|0|ltr|มนุษย์ทั้งหลายเกิดมามีอิสระและเสมอภาคกันในเกียรติศักดิ์และสิทธิ
+android/NotoSerifThai-Bold.ttf|0|ltr|มนุษย์ทั้งหลายเกิดมามีอิสระและเสมอภาคกันในเกียรติศักดิ์และสิทธิ
+macos/ThonburiUI.ttc|0|ltr|มนุษย์ทั้งหลายเกิดมามีอิสระและเสมอภาคกันในเกียรติศักดิ์และสิทธิ
+android/NotoSansLao-Regular.ttf|0|ltr|ມະນຸດທຸກຄົນເກີດມາມີກຽດສັກສີ ແລະ ສິດທິເທົ່າທຽມກັນ
+android/NotoSansLaoUI-Bold.ttf|0|ltr|ມະນຸດທຸກຄົນເກີດມາມີກຽດສັກສີ ແລະ ສິດທິເທົ່າທຽມກັນ
+macos/Lao Sangam MN.ttf|0|ltr|ມະນຸດທຸກຄົນເກີດມາມີກຽດສັກສີ ແລະ ສິດທິເທົ່າທຽມກັນ

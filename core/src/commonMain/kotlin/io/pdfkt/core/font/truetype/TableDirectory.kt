@@ -113,27 +113,53 @@ internal class TableDirectory private constructor(
         private const val RECORD_SIZE: Int = 16
 
         /**
-         * Reads the directory at the start of [file].
+         * Reads the directory of font [index] of [file]: the directory the file
+         * opens with, or — for a font collection — the one its TTC header points
+         * at for that font.
+         *
+         * "The TTC Header … identifies the file as a TTC file … and provides
+         * offsets to each of the individual fonts", each of which is "the
+         * offset to the TableDirectory for each font from the beginning of the
+         * file". The tables of a collection's fonts are at offsets "from the
+         * beginning of the TTC file", which is what the records here are read
+         * against, so a font of a collection is read without cutting it out.
          *
          * @throws IllegalArgumentException if the file does not open with a
-         *   table directory, or a record does not describe bytes the file has.
+         *   table directory or a TTC header, a collection has no font [index],
+         *   [index] is not 0 for a file that is a single font, or a record does
+         *   not describe bytes the file has.
          */
-        fun parse(file: BigEndianReader): TableDirectory {
+        fun parse(file: BigEndianReader, index: Int = 0): TableDirectory {
+            require(index >= 0) { "a font index counts from 0; $index is not one" }
             file.seek(0)
-            val sfntVersion = file.uint32()
-            require(sfntVersion != FONT_COLLECTION) {
-                "the bytes are an OpenType font collection ('ttcf'), which holds several fonts and " +
-                    "begins with a TTC header rather than a table directory; supply one font of it"
+            var sfntVersion = file.uint32()
+            var directoryStart = 0
+            if (sfntVersion == FONT_COLLECTION) {
+                file.skip(4) // majorVersion, minorVersion: both versions start with the same fields
+                val numFonts = file.uint32()
+                require(index < numFonts) {
+                    "the font collection holds $numFonts fonts, numbered from 0, so it has no font $index"
+                }
+                file.skip(index * 4)
+                directoryStart = file.uint32().toInt()
+                file.seek(directoryStart)
+                sfntVersion = file.uint32()
+            } else {
+                require(index == 0) {
+                    "the bytes are a single font, not a font collection ('ttcf'), so the only font in " +
+                        "them is font 0; $index was asked for"
+                }
             }
             require(sfntVersion == TRUE_TYPE_OUTLINES || sfntVersion == COMPACT_FONT_FORMAT_OUTLINES) {
                 "the bytes do not begin with a table directory: the sfntVersion is ${hex(sfntVersion)}, " +
-                    "and a font file opens with ${hex(TRUE_TYPE_OUTLINES)} for TrueType outlines or " +
-                    "${hex(COMPACT_FONT_FORMAT_OUTLINES)} ('OTTO') for CFF outlines"
+                    "and a font file opens with ${hex(TRUE_TYPE_OUTLINES)} for TrueType outlines, " +
+                    "${hex(COMPACT_FONT_FORMAT_OUTLINES)} ('OTTO') for CFF outlines, or " +
+                    "${hex(FONT_COLLECTION)} ('ttcf') for a collection of fonts"
             }
 
             val numTables = file.uint16()
             file.skip(6) // searchRange, entrySelector, rangeShift — derived, not trusted
-            require(HEADER_SIZE + numTables * RECORD_SIZE <= file.size) {
+            require(directoryStart + HEADER_SIZE + numTables * RECORD_SIZE <= file.size) {
                 "the table directory claims $numTables tables, which needs " +
                     "${HEADER_SIZE + numTables * RECORD_SIZE} bytes of records, but the font program is " +
                     "${file.size} bytes"
