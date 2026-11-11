@@ -5,17 +5,27 @@ import Pdfkt
 /// pages its selection names.
 public struct Header {
     internal let blocks: [ColophonBlock]
-    internal let height: Float
+    internal let height: Double?
     internal let pages: BandPageSelection
+    internal let overflow: BandOverflowPolicy
+    internal let gap: Double
 
+    /// - Parameters:
+    ///   - height: the strip in points, or nil for one as tall as the content.
+    ///   - overflow: what content taller than `height` does.
+    ///   - gap: the space in points kept clear between the strip and the text.
     public init(
         height: Double? = nil,
         pages: BandPageSelection = .all,
+        overflow: BandOverflowPolicy = .grow,
+        gap: Double = Double(DocumentScopeKt.DEFAULT_BAND_GAP),
         @ColophonBuilder content: () -> [ColophonBlock]
     ) {
         self.blocks = content()
-        self.height = height.map { Float($0) } ?? DocumentScopeKt.DEFAULT_BAND_HEIGHT
+        self.height = height
         self.pages = pages
+        self.overflow = overflow
+        self.gap = gap
     }
 
     internal func applyToColophon(_ scope: KotlinColophonScope) {
@@ -26,17 +36,27 @@ public struct Header {
 /// The running foot — the same strip, below the content.
 public struct Footer {
     internal let blocks: [ColophonBlock]
-    internal let height: Float
+    internal let height: Double?
     internal let pages: BandPageSelection
+    internal let overflow: BandOverflowPolicy
+    internal let gap: Double
 
+    /// - Parameters:
+    ///   - height: the strip in points, or nil for one as tall as the content.
+    ///   - overflow: what content taller than `height` does.
+    ///   - gap: the space in points kept clear between the strip and the text.
     public init(
         height: Double? = nil,
         pages: BandPageSelection = .all,
+        overflow: BandOverflowPolicy = .grow,
+        gap: Double = Double(DocumentScopeKt.DEFAULT_BAND_GAP),
         @ColophonBuilder content: () -> [ColophonBlock]
     ) {
         self.blocks = content()
-        self.height = height.map { Float($0) } ?? DocumentScopeKt.DEFAULT_BAND_HEIGHT
+        self.height = height
         self.pages = pages
+        self.overflow = overflow
+        self.gap = gap
     }
 
     internal func applyToColophon(_ scope: KotlinColophonScope) {

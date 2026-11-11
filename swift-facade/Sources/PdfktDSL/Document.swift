@@ -174,13 +174,25 @@ public enum DocumentBuilder {
 
     public static func buildExpression(_ header: Header) -> DocumentBlock {
         DocumentBlock { scope in
-            scope.header(height: header.height, pages: header.pages.kotlin, block: header.applyToColophon)
+            scope.colophonHeader(
+                height: header.height.map { KotlinDouble(value: $0) },
+                pages: header.pages.kotlin,
+                overflow: header.overflow.kotlin,
+                gap: header.gap,
+                block: header.applyToColophon
+            )
         }
     }
 
     public static func buildExpression(_ footer: Footer) -> DocumentBlock {
         DocumentBlock { scope in
-            scope.footer(height: footer.height, pages: footer.pages.kotlin, block: footer.applyToColophon)
+            scope.colophonFooter(
+                height: footer.height.map { KotlinDouble(value: $0) },
+                pages: footer.pages.kotlin,
+                overflow: footer.overflow.kotlin,
+                gap: footer.gap,
+                block: footer.applyToColophon
+            )
         }
     }
 }

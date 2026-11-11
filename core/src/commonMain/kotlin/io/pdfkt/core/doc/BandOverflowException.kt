@@ -13,21 +13,20 @@ import io.pdfkt.core.model.Pt
 // No clause applies: L4 is this library's own design.
 
 /**
- * A header or footer whose content is taller than the strip reserved for it.
+ * A header or footer whose content is taller than the strip reserved for it,
+ * in a band that asked to be refused for it ([BandOverflow.Fail]).
  *
- * The rule, and when it fires: header and footer bands are planned per page
- * with the page number substituted at resolve; a band that does not fit its
- * reserved space is an error at document-spec validation, not at page 37.
+ * It is the strict one of the three answers to a band that does not fit, and
+ * the only one that is not the default: a band grows to its content unless it
+ * is told otherwise ([BandOverflow.Grow]), or draws what fits ([BandOverflow.Clip]).
+ * A caller who sized the strip by hand — to line the text up with a printed
+ * form, say — chooses this to be told instead.
  *
- * The reason it cannot be anything softer is the order the stages run in. The
- * reserve is what fixes the content area; the content area is what fixes how
- * many pages there are; and how many pages there are is what a band saying
- * "Page 3 of 12" is planned from. A band allowed to grow into the space below it
- * would therefore change the pagination it is numbering, and one allowed to
- * spill over that space would print itself across the first line of the text.
- * Neither is a document anyone asked for, so the band is refused instead —
- * before a byte of the file is written, since every page's band is planned
- * before the first page is emitted.
+ * When it fires: every page's band is planned before the first page is emitted,
+ * so the document is refused before a byte of the file is written, not at page
+ * 37. The band is not drawn over the space below it either way: the strip fixed
+ * the content area, and the content area fixed how many pages a band saying
+ * "Page 3 of 12" is numbering.
  *
  * A subtype of `IllegalArgumentException` for the same reason
  * [io.pdfkt.core.fragment.UnplaceableBlockException] is one: what was handed in
@@ -53,10 +52,8 @@ public class BandOverflowException internal constructor(
     "the ${position.label} of page ${numbering.page} of ${numbering.pages} does not fit the " +
         "$reserved reserved for it: " +
         (required?.let { "its content is $it tall" } ?: "its content is taller than the page it is on") +
-        ". A band is planned into a strip taken out of the content area of every page, and the size " +
-        "of that strip is what fixed how many pages the document has — so a band cannot be given " +
-        "more room without renumbering the document it is numbering, and is refused rather than " +
-        "drawn over the text below it. Give the " +
-        "band a greater height, less content, or a smaller font",
+        ". The band was set to be refused when it does not fit (BandOverflow.Fail): give it a " +
+        "greater height or none — a band with no height is as tall as its content — less content, " +
+        "a smaller font, or let it grow (BandOverflow.Grow) or clip (BandOverflow.Clip)",
     cause,
 )

@@ -153,6 +153,13 @@ of them. The files must not change until then.
 A `pageBreak()` next to a section adds no blank page; the document's header
 and footer are drawn on a section's pages too, in strips cut from that page.
 
+A header or footer is as tall as what it draws unless given a `height`, and
+is kept `DEFAULT_BAND_GAP` (6 pt) clear of the text, or its own `gap`. Text
+taller than a given height grows the strip by default (`overflow =
+BandOverflow.Grow`, up to a quarter of the page); `BandOverflow.Clip` keeps
+the height and draws the lines that fit, and `BandOverflow.Fail` refuses the
+document with a `BandOverflowException`.
+
 ## Swift (iOS / macOS)
 
 The same pairing, spoken SwiftUI-style: the `PdfktDSL` package wraps the

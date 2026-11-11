@@ -283,12 +283,12 @@ final class FacadeFidelityTests: XCTestCase {
                 Paragraph { Text("more") }
             },
             raw: rawDocument { scope in
-                scope.header(height: DocumentScopeKt.DEFAULT_BAND_HEIGHT, pages: .all) { colophon in
+                scope.colophonHeader(height: nil, pages: .all, overflow: .grow, gap: Double(DocumentScopeKt.DEFAULT_BAND_GAP)) { colophon in
                     colophon.paragraph(align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil, direction: .auto_) { inline in
                         inline.text(value: "Q1 Report") { style in style.bold = true }
                     }
                 }
-                scope.footer(height: DocumentScopeKt.DEFAULT_BAND_HEIGHT, pages: .exceptfirst) { colophon in
+                scope.colophonFooter(height: nil, pages: .exceptfirst, overflow: .grow, gap: Double(DocumentScopeKt.DEFAULT_BAND_GAP)) { colophon in
                     colophon.paragraph(text: colophon.pageOfPages(separator: " / "), align: .right, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil, direction: .auto_)
                 }
                 scope.paragraph(text: "body", align: .left, indentLeft: 0, indentRight: 0, spacingBefore: nil, spacingAfter: nil, direction: .auto_)

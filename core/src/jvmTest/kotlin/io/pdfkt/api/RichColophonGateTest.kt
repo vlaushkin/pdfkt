@@ -212,8 +212,8 @@ class RichColophonGateTest {
         metadata = Metadata(title = TITLE, author = AUTHOR)
         clock = Clock { PdfDate.ofEpochSeconds(PINNED_EPOCH_SECONDS, offsetMinutes = OFFSET_MINUTES) }
 
-        header(HEAD)
-        footer(FOOT)
+        header(HEAD, height = STRIP)
+        footer(FOOT, height = STRIP)
 
         paragraph(FIRST_BODY)
         pageBreak()
@@ -225,10 +225,18 @@ class RichColophonGateTest {
     /** This many points as rows or columns of the raster, at the resolution it was drawn at. */
     private val Int.px: Int get() = (this * RASTER_DPI / POINTS_PER_INCH).roundToInt()
 
-    /** The default strip a colophon is given, in pixels of the raster. */
-    private val bandPx: Int get() = (DEFAULT_BAND_HEIGHT.value * RASTER_DPI / POINTS_PER_INCH).roundToInt()
+    /** The strip each colophon is given, in pixels of the raster. */
+    private val bandPx: Int get() = (STRIP.value * RASTER_DPI / POINTS_PER_INCH).roundToInt()
 
     private companion object {
+        /**
+         * The strip of each colophon, given rather than measured so that the
+         * raster has a known edge to look for the body below: a strip taller
+         * than its one line, which is what the anchoring of a footer to the foot
+         * of its strip needs to be seen.
+         */
+        val STRIP: Pt = 28.pt
+
         const val FONT_ID = "DejaVuSans"
 
         /** Four different margins, so that an inset applied to the wrong side shows up as one. */

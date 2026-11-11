@@ -67,11 +67,13 @@ import kotlinx.io.Sink
  * before the fragmenter runs — it is given [DocumentSpec.contentArea], which is
  * the page between them — and planned into their strips after it has, by
  * [BandPlanner]. That order is the whole of why the reserve exists: it fixes the
- * content area without knowing what goes in the bands, the content area fixes how
- * many pages there are, and the page count is what a band saying "Page 3 of 12"
- * needs before it can be planned at all. Every page's bands are planned before
- * the first page is emitted, so a band that does not fit its strip stops the
- * document instead of the thirty-seventh page of it.
+ * content area before the bands are drawn, the content area fixes how many pages
+ * there are, and the page count is what a band saying "Page 3 of 12" needs
+ * before it can be planned at all. A band as tall as its content settles its
+ * strip by being measured, before the content is paginated and again on the
+ * pages that came out ([BandPlanner.reserve]). Every page's bands are planned
+ * before the first page is emitted, so a band that is refused for not fitting
+ * its strip stops the document instead of the thirty-seventh page of it.
  *
  * @param spec the document, including the clock its dates come from.
  * @param theme how it is set — the one input that changes what the document
@@ -83,7 +85,8 @@ import kotlinx.io.Sink
  *   the file is not written rather than written with a hole in it.
  * @throws io.pdfkt.core.fragment.UnplaceableBlockException if a block cannot be
  *   placed even on an empty page.
- * @throws BandOverflowException if a header or footer is taller than the strip
+ * @throws BandOverflowException if a header or footer whose
+ *   [BandSpec.overflow] is [BandOverflow.Fail] is taller than the strip
  *   reserved for it on any page. Nothing has been written to [sink] when it is
  *   raised.
  */
@@ -92,9 +95,10 @@ public fun render(spec: DocumentSpec, theme: Theme, sink: Sink) {
     val fonts = FontCatalog()
     val images = ImageCatalog()
     val styled = Resolver(theme, fonts).resolve(spec.content)
-    val laidOut = layOut(spec, styled, fonts)
+    val bandPlanner = BandPlanner(theme, fonts)
+    val (settled, laidOut) = bandPlanner.reserve(spec) { reserved -> layOut(reserved, styled, fonts) }
     val pages: List<PagePlan> = laidOut.map { it.first }
-    val bands = BandPlanner(theme, fonts).plan(spec, laidOut.map { it.second })
+    val bands = bandPlanner.plan(settled, laidOut.map { it.second })
     val emitter = PlanEmitter(PdfDocumentWriter(sink), fonts, images)
     for ((index, page) in pages.withIndex()) emitter.emit(PagePlan(page.size, page.items + bands[index]))
     emitter.finish(

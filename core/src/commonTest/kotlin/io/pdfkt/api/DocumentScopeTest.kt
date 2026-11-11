@@ -176,8 +176,9 @@ class DocumentScopeTest {
         val head = assertNotNull(spec.header, "header() should have put a band on the document")
         val foot = assertNotNull(spec.footer, "footer() should have put a band on the document")
 
-        assertEquals(DEFAULT_BAND_HEIGHT, head.height, "the default strip is the standard band height")
-        assertEquals(DEFAULT_BAND_HEIGHT, foot.height)
+        assertNull(head.height, "a band with no height given is as tall as its content")
+        assertNull(foot.height)
+        assertEquals(BandOverflow.Grow, head.overflow, "a band too tall for its strip grows by default")
 
         // The band's content is a function of the page numbering, and a colophon
         // that says the same thing on every page says it on every page.

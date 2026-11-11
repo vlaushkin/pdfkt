@@ -19,6 +19,7 @@ import io.pdfkt.core.model.Size
 import io.pdfkt.core.model.pt
 import io.pdfkt.core.obj.PdfDate
 import io.pdfkt.core.plan.PlacedItem
+import io.pdfkt.core.resolve.Resolver
 import io.pdfkt.core.style.Theme
 import kotlinx.io.Buffer
 import kotlin.test.Test
@@ -98,8 +99,9 @@ class BandPlanTest {
     }
 
     /**
-     * A band with more in it than its strip holds is refused, and refused before
-     * a byte of the document has been written.
+     * A band with more in it than its strip holds, that asked to be refused for
+     * it, is refused — and refused before a byte of the document has been
+     * written.
      *
      * The buffer is the assertion. The rule is an error at document-spec
      * validation, not at page 37 — and a file whose first thirty-six
@@ -107,8 +109,8 @@ class BandPlanTest {
      * thing — the caller would be holding a truncated PDF and an exception.
      */
     @Test
-    fun `a band taller than its strip is refused before anything is written`() {
-        val spec = spec(footer = band(SHORT_BAND) { listOf(paragraph(LONG_TEXT)) })
+    fun `a strict band taller than its strip is refused before anything is written`() {
+        val spec = spec(footer = band(SHORT_BAND, overflow = BandOverflow.Fail) { listOf(paragraph(LONG_TEXT)) })
         val sink = Buffer()
 
         val refused = assertFailsWith<BandOverflowException> { render(spec, Theme.Default, sink) }
@@ -139,8 +141,8 @@ class BandPlanTest {
      * wrong.
      */
     @Test
-    fun `a band that only overflows on a later page is refused too`() {
-        val footer = BandSpec(height = SHORT_BAND) { numbering ->
+    fun `a strict band that only overflows on a later page is refused too`() {
+        val footer = BandSpec(height = SHORT_BAND, overflow = BandOverflow.Fail) { numbering ->
             val lastPage = numbering.page == numbering.pages
             listOf(paragraph(if (lastPage) LONG_TEXT else "Page ${numbering.page}"))
         }
@@ -164,11 +166,137 @@ class BandPlanTest {
      * the same band rather than being handed the guard's message about pages.
      */
     @Test
-    fun `a band whose one line does not fit is refused as a band`() {
-        val spec = spec(footer = band(HAIRLINE) { listOf(paragraph("Page 1")) })
+    fun `a strict band whose one line does not fit is refused as a band`() {
+        val spec = spec(footer = band(HAIRLINE, overflow = BandOverflow.Fail) { listOf(paragraph("Page 1")) })
         val refused = assertFailsWith<BandOverflowException> { render(spec, Theme.Default, Buffer()) }
         assertEquals(HAIRLINE, refused.reserved)
         assertEquals(BandPosition.Footer, refused.position)
+    }
+
+    /**
+     * A band with no height of its own is as tall as what it draws: one line,
+     * two, five — the strip is that many lines of the theme's body text, and
+     * every line of it is drawn.
+     */
+    @Test
+    fun `a band with no height is as tall as its content`() {
+        fun reserved(count: Int): Pt? {
+            val spec = spec(footer = band(null) { List(count) { index -> line("Line ${index + 1}") } })
+            val (settled, pages) = planSettled(spec)
+            assertEquals(count, lines(pages.single()), "a $count-line footer drew ${lines(pages.single())} lines")
+            return settled.footer?.height
+        }
+        val one = requireNotNull(reserved(1))
+        assertTrue(one > Pt.ZERO, "a one-line footer reserved nothing")
+        assertNear(one * 2.0f, reserved(2), "two lines")
+        assertNear(one * 5.0f, reserved(5), "five lines")
+        assertNear(one * 7.0f, reserved(7), "seven lines")
+    }
+
+    /**
+     * A line long enough to wrap is measured as the lines it wraps to — the
+     * height is taken from the band set across its strip, not from counting
+     * paragraphs.
+     */
+    @Test
+    fun `a band with no height grows with the lines its text wraps to`() {
+        val (one, _) = settle(spec(header = band(null) { listOf(line("Running")) }))
+        val (wrapped, pages) = planSettled(spec(header = band(null) { listOf(line(LONG_TEXT)) }))
+        val drawn = lines(pages.single())
+        assertTrue(drawn > 1, "the long line did not wrap, so nothing was proved")
+        val line = requireNotNull(one.header?.height)
+        assertNear(paragraphOf(drawn, line), wrapped.header?.height, "$drawn wrapped lines")
+        assertTrue(wrapped.contentArea.height < one.contentArea.height, "the taller header took no room from the text")
+    }
+
+    /**
+     * A band given a height its content does not fit grows past it rather than
+     * stop the document — the default answer to content of any length — and
+     * the content area gives up the difference.
+     */
+    @Test
+    fun `a band taller than its given height grows rather than refuse the document`() {
+        val spec = spec(footer = band(SHORT_BAND) { listOf(line(LONG_TEXT)) })
+        val (settled, pages) = planSettled(spec)
+        val (sized, _) = planSettled(spec(footer = band(null) { listOf(line(LONG_TEXT)) }))
+        val grown = requireNotNull(settled.footer?.height)
+        assertTrue(grown > SHORT_BAND, "the footer kept its $SHORT_BAND")
+        assertEquals(sized.footer?.height, grown, "the footer grew to other than its content")
+        assertEquals(wrappedLines(), lines(pages.single()), "a line of the footer was left out")
+        val sink = Buffer()
+        render(spec, Theme.Default, sink)
+        assertTrue(sink.size > 0L, "the document was not written")
+    }
+
+    /** A given height is a floor: content shorter than it leaves the strip as it was given. */
+    @Test
+    fun `a band shorter than its given height keeps the height`() {
+        val (settled, _) = settle(spec(footer = band(BAND_HEIGHT) { listOf(line("pdfkt")) }))
+        assertEquals(BAND_HEIGHT, settled.footer?.height)
+    }
+
+    /** A clipped band keeps its strip and draws the lines that fit it. */
+    @Test
+    fun `a clipped band keeps its height and draws what fits`() {
+        val spec = spec(footer = band(SHORT_BAND, overflow = BandOverflow.Clip) { listOf(line(LONG_TEXT)) })
+        val (settled, pages) = planSettled(spec)
+        assertEquals(SHORT_BAND, settled.footer?.height)
+        assertEquals(1, lines(pages.single()), "a strip one line tall drew ${lines(pages.single())} lines")
+        render(spec, Theme.Default, Buffer())
+    }
+
+    /** A clipped band whose one line does not fit its strip draws nothing, and the document is written. */
+    @Test
+    fun `a clipped band too short for one line draws nothing`() {
+        val spec = spec(footer = band(HAIRLINE, overflow = BandOverflow.Clip) { listOf(line("Page 1")) })
+        val (_, pages) = planSettled(spec)
+        assertEquals(0, lines(pages.single()))
+        render(spec, Theme.Default, Buffer())
+    }
+
+    /**
+     * A strict band with no height grows to its content too: it is refused only
+     * when it does not fit the strip, and a strip cut to the content fits it.
+     */
+    @Test
+    fun `a strict band with no height is sized to its content and not refused`() {
+        val spec = spec(footer = band(null, overflow = BandOverflow.Fail) { listOf(line(LONG_TEXT)) })
+        render(spec, Theme.Default, Buffer())
+    }
+
+    /**
+     * Growth stops at a quarter of the printable height, so a band can never
+     * push the text off the page — and what is taller than that is clipped, not
+     * refused.
+     */
+    @Test
+    fun `a band grows no further than a quarter of the page`() {
+        val spec = spec(header = band(null) { List(EXCESSIVE_LINES) { index -> line("Line $index") } })
+        val (settled, pages) = planSettled(spec)
+        val limit = spec.printableArea.height / 4.0f
+        assertNear(limit, settled.header?.height, "the header grew past the limit")
+        assertTrue(lines(pages.single()) in 1 until EXCESSIVE_LINES, "the header drew ${lines(pages.single())} lines")
+        render(spec, Theme.Default, Buffer())
+    }
+
+    /**
+     * A band whose text depends on the page count is measured again on the
+     * pages that came out: it is one line on every page but the last, several
+     * on the last, and the strip is those lines on every page.
+     */
+    @Test
+    fun `a band that only grows on a later page is measured on that page`() {
+        val footer = band(null) { numbering ->
+            listOf(line(if (numbering.page == numbering.pages) LONG_TEXT else "Page ${numbering.page}"))
+        }
+        val (one, _) = settle(spec(footer = band(null) { listOf(line("Page 1")) }, content = twoPages()))
+        val (settled, pages) = planSettled(spec(footer = footer, content = twoPages()))
+        assertTrue(pages.size >= 2, "the document was written onto one page, so nothing was proved")
+        val last = wrappedLines()
+        val line = requireNotNull(one.footer?.height)
+        assertNear(paragraphOf(last, line), settled.footer?.height, "the last page's lines")
+        assertEquals(last, lines(pages.last()), "the last page's footer lost lines")
+        assertEquals(1, lines(pages.first()))
     }
 
     /** A document with no bands at all plans none, and every page is content. */
@@ -196,8 +324,51 @@ class BandPlanTest {
 
     private fun paragraph(text: String): Block = ParagraphBlock(listOf(TextRun(text)))
 
-    private fun band(height: Pt, pages: BandPages = BandPages.All, content: (PageNumbering) -> List<Block>): BandSpec =
-        BandSpec(height, pages, content)
+    private fun band(
+        height: Pt?,
+        pages: BandPages = BandPages.All,
+        overflow: BandOverflow = BandOverflow.Grow,
+        content: (PageNumbering) -> List<Block>,
+    ): BandSpec = BandSpec(height, pages, overflow, content = content)
+
+    /** [spec] with its strips settled, and the pages its content came out on. */
+    private fun settle(spec: DocumentSpec): Pair<DocumentSpec, List<PageSetup>> {
+        val fonts = FontCatalog()
+        val styled = Resolver(Theme.Default, fonts).resolve(spec.content)
+        val (settled, pages) = BandPlanner(Theme.Default, fonts).reserve(spec) { reserved ->
+            layOut(reserved, styled, fonts)
+        }
+        return settled to pages.map { it.second }
+    }
+
+    /** [settle] and plan: what each page's bands draw, in the strips that were settled. */
+    private fun planSettled(spec: DocumentSpec): Pair<DocumentSpec, List<List<PlacedItem>>> {
+        val (settled, pages) = settle(spec)
+        return settled to BandPlanner(Theme.Default, FontCatalog()).plan(settled, pages)
+    }
+
+    /** How many lines [LONG_TEXT] wraps to across the strip of [spec]'s page. */
+    private fun wrappedLines(): Int =
+        lines(planSettled(spec(footer = band(null) { listOf(line(LONG_TEXT)) })).second.single())
+
+    /**
+     * How tall a paragraph of [count] lines is, one of which is [line] tall: the
+     * theme's line height lies between baselines, and the last line takes only
+     * its own extent.
+     */
+    private fun paragraphOf(count: Int, line: Pt): Pt = line + line * (Theme.Default.lineHeight * (count - 1))
+
+    /** How many lines a page's bands draw. */
+    private fun lines(items: List<PlacedItem>): Int = items.count { it is PlacedItem.Text }
+
+    /** A colophon line: one paragraph with no spacing of its own, as the DSL writes one. */
+    private fun line(text: String): Block =
+        ParagraphBlock(listOf(TextRun(text)), spacingBefore = Pt.ZERO, spacingAfter = Pt.ZERO)
+
+    private fun assertNear(expected: Pt, actual: Pt?, message: String) {
+        val value = requireNotNull(actual) { "$message: the strip was not settled" }
+        assertTrue(kotlin.math.abs(expected.value - value.value) < EPSILON, "$message: expected $expected, got $value")
+    }
 
     /** The footer of the acceptance: "Page N of M", on every page. */
     private fun numbered(): BandSpec = BandSpec(height = BAND_HEIGHT) { numbering ->
@@ -232,8 +403,13 @@ class BandPlanTest {
         /** A strip no line of any size fits: the planner's guard answers before the band does. */
         val HAIRLINE: Pt = 2.pt
 
-        /** Three lines of text at the width of an A4 page between 56-point margins. */
+        /** Several lines of text at the width of an A4 page between 56-point margins. */
         val LONG_TEXT: String = (1..40).joinToString(separator = " ") { word -> "overflowing$word" }
+
+        /** More lines than a quarter of an A4 page holds. */
+        const val EXCESSIVE_LINES: Int = 40
+
+        const val EPSILON: Float = 0.01f
 
         const val TWO_PAGES_OF_PARAGRAPHS: Int = 40
         const val WORDS_PER_PARAGRAPH: Int = 24

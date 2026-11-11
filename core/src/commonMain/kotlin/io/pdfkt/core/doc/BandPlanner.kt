@@ -8,6 +8,7 @@
  */
 package io.pdfkt.core.doc
 
+import io.pdfkt.core.block.SectionBlock
 import io.pdfkt.core.font.FontCatalog
 import io.pdfkt.core.fragment.BlockPlanner
 import io.pdfkt.core.fragment.FitResult
@@ -47,10 +48,14 @@ import io.pdfkt.core.style.Theme
  *   "Page 3 of 12" is not known before then. This is what the reserve buys: the
  *   strip's height does not depend on what goes in it, so the content area — and
  *   with it the number of pages — is fixed before a band is looked at.
- * - **It fits its strip or the document is refused.** See
- *   [BandOverflowException]; every page's bands are planned before the first
- *   page is emitted, which is what makes that "an error at document-spec
- *   validation, not at page 37".
+ * - **Its strip is settled before the content is paginated** ([reserve]): a
+ *   band with no height of its own, or one that may grow, is measured and the
+ *   content paginated against the strip that came out, as many times as it
+ *   takes the strip to stop growing.
+ * - **What does not fit its strip is [BandSpec.overflow]'s to decide** —
+ *   clipped, or the document refused ([BandOverflowException]); every page's
+ *   bands are planned before the first page is emitted, so a refusal comes
+ *   before a byte of the file, not at page 37.
  *
  * @param theme the theme the document is set in — a band is set in it too, so a
  *   footer picks up the body font without being told it.
@@ -86,6 +91,119 @@ internal class BandPlanner(theme: Theme, fonts: FontCatalog) {
     }
 
     /**
+     * [spec] with the strip of each band settled, and its content paginated
+     * against them by [layOut].
+     *
+     * A band that may not grow ([BandOverflow.Clip] or [BandOverflow.Fail]
+     * with a height of its own) keeps its height, and a document of only such
+     * bands is laid out once. Any other band starts from its height, or from
+     * what it measures on the first page it is drawn on, and the content is
+     * paginated against that; then the band is measured on every page that
+     * came out, with that page's numbering and against that page's width, and
+     * when it needs more than it was given the content is paginated again.
+     * The strip only ever grows, so the passes end — the growth is capped
+     * ([growthLimit]) and the passes counted ([MAX_PASSES]); a band still
+     * taller than its strip after that is clipped or refused when it is
+     * planned, as its [BandSpec.overflow] says.
+     */
+    fun <P> reserve(
+        spec: DocumentSpec,
+        layOut: (DocumentSpec) -> List<Pair<P, PageSetup>>,
+    ): Pair<DocumentSpec, List<Pair<P, PageSetup>>> {
+        if (!spec.header.grows && !spec.footer.grows) return spec to layOut(spec)
+        val limit = growthLimit(spec)
+        val document = PageSetup(spec.pageSize, spec.margins)
+        var head = seed(spec.header, spec, document, limit)
+        var foot = seed(spec.footer, spec, document, limit)
+        var settled = spec.reserving(head, foot)
+        var pages = layOut(settled)
+        repeat(MAX_PASSES) {
+            val numbered = pages.map { it.second }
+            val nextHead = grown(spec.header, head, settled, numbered, limit)
+            val nextFoot = grown(spec.footer, foot, settled, numbered, limit)
+            if (nextHead == head && nextFoot == foot) return settled to pages
+            head = nextHead
+            foot = nextFoot
+            settled = spec.reserving(head, foot)
+            pages = layOut(settled)
+        }
+        return settled to pages
+    }
+
+    /**
+     * The strip [band] starts from: its own height, or — when it has none, or
+     * may grow past it — what its content measures on the first page it is
+     * drawn on, numbered as though the document were that long.
+     *
+     * The guess is only a start: a band that reads the page count is measured
+     * again once the count is known. Content that cannot be measured here — a
+     * band block that refuses the numbering it is given — starts from nothing
+     * and is measured against the real pages instead, where it is planned.
+     */
+    private fun seed(band: BandSpec?, spec: DocumentSpec, document: PageSetup, limit: Pt): Pt {
+        if (band == null) return Pt.ZERO
+        val floor = band.height ?: Pt.ZERO
+        if (!band.grows) return floor
+        val first = if (band.pages == BandPages.ExceptFirst) PageNumbering(2, 2) else PageNumbering(1, 1)
+        val measured = runCatching {
+            measure(band, first, spec.printableArea(document.size, document.margins))
+        }.getOrNull() ?: Pt.ZERO
+        return minOf(limit, maxOf(floor, measured))
+    }
+
+    /**
+     * The strip [band] needs on [pages], given that it has [current]: the
+     * tallest it measures on any page it is drawn on, capped at [limit], and
+     * never less than [current] — a strip that shrank could let the content
+     * back onto fewer pages, and a band that reads the count could then
+     * measure taller again.
+     */
+    private fun grown(band: BandSpec?, current: Pt, spec: DocumentSpec, pages: List<PageSetup>, limit: Pt): Pt {
+        if (band == null || !band.grows) return current
+        var needed = current
+        for ((index, setup) in pages.withIndex()) {
+            val numbering = PageNumbering(index + 1, pages.size)
+            if (!band.pages.appliesTo(numbering.page)) continue
+            val printable = spec.printableArea(setup.size, setup.margins)
+            // A band taller than the whole printable height has no single
+            // height to grow to; the limit is as far as it may.
+            needed = maxOf(needed, measure(band, numbering, printable) ?: limit)
+            if (needed >= limit) return limit
+        }
+        return minOf(needed, limit)
+    }
+
+    /**
+     * How tall [band]'s content is on page [numbering], set across the width
+     * of [printable] and against its whole height, or null when it does not fit
+     * even that.
+     */
+    private fun measure(band: BandSpec, numbering: PageNumbering, printable: Rect): Pt? {
+        val blocks = resolver.resolve(band.content(numbering))
+        val fit =
+            try {
+                planner.planSequence(blocks, width = printable.width, available = printable.height, atPageTop = true)
+            } catch (tooTall: UnplaceableBlockException) {
+                return null
+            }
+        return (fit as? FitResult.Fits)?.consumed
+    }
+
+    /**
+     * How tall a growing band may become: a quarter of the printable height of
+     * the smallest page the document is set on — its own paper, or a section's
+     * that is not cut to its content. A header and a footer at the limit still
+     * leave half the page to the text.
+     */
+    private fun growthLimit(spec: DocumentSpec): Pt {
+        val papers = listOf(PageSetup(spec.pageSize, spec.margins)) +
+            spec.content.filterIsInstance<SectionBlock>().filterNot { it.fitHeight }
+                .map { section -> PageSetup(section.pageSize, section.margins) }
+        val smallest = papers.minOf { setup -> spec.printableArea(setup.size, setup.margins).height }
+        return smallest / GROWTH_SHARE
+    }
+
+    /**
      * One band on one page: its blocks for [numbering], planned into [area].
      *
      * The items come back in the coordinates every planner works in — the origin
@@ -114,27 +232,50 @@ internal class BandPlanner(theme: Theme, fonts: FontCatalog) {
             } catch (tooTall: UnplaceableBlockException) {
                 // A band whose first line alone is taller than the strip. The
                 // guard that raised is about pages that would repeat for ever;
-                // here the same fact has a better name and a better answer.
-                throw overflow(position, numbering, strip, blocks, probe, tooTall)
+                // here the same fact has a better name and a better answer —
+                // and, unless the band asked to be refused, a page that draws
+                // nothing of it.
+                if (band.overflow == BandOverflow.Fail) {
+                    throw overflow(position, numbering, strip, blocks, probe, tooTall)
+                }
+                return emptyList()
             }
         return when (fit) {
-            // A header hangs from the top of its strip; a footer stands on the
-            // bottom of its own. Planning is top-down either way — the anchor
-            // decides where the unused part of the strip ends up: below a
-            // header's text, above a footer's. A footer floating at the top of
-            // its strip reads as a wrong margin, which is how this was found.
-            is FitResult.Fits -> {
-                val drop = when (position) {
-                    BandPosition.Header -> Pt.ZERO
-                    BandPosition.Footer -> strip.height - fit.consumed
-                }
-                fit.plan.map { item -> item.translated(strip.left, strip.top - drop) }
-            }
+            is FitResult.Fits -> anchored(fit.plan, fit.consumed, strip, position)
             // Both of the other answers say the same thing — not all of it went
-            // in — and neither can be honoured: a band has no next page to
-            // continue onto, since the page it is on is the one it names.
-            is FitResult.Splits, FitResult.Defers -> throw overflow(position, numbering, strip, blocks, probe, null)
+            // in — and neither can be honoured as it is anywhere else: a band
+            // has no next page to continue onto, since the page it is on is the
+            // one it names. What fitted is drawn, unless the band asked to be
+            // refused instead.
+            is FitResult.Splits ->
+                if (band.overflow == BandOverflow.Fail) {
+                    throw overflow(position, numbering, strip, blocks, probe, null)
+                } else {
+                    anchored(fit.head, fit.consumed, strip, position)
+                }
+            FitResult.Defers ->
+                if (band.overflow == BandOverflow.Fail) {
+                    throw overflow(position, numbering, strip, blocks, probe, null)
+                } else {
+                    emptyList()
+                }
         }
+    }
+
+    /**
+     * [plan], [consumed] tall, put in its [strip]. A header hangs from the top
+     * of its strip; a footer stands on the bottom of its own. Planning is
+     * top-down either way — the anchor decides where the unused part of the
+     * strip ends up: below a header's text, above a footer's. A footer floating
+     * at the top of its strip reads as a wrong margin, which is how this was
+     * found.
+     */
+    private fun anchored(plan: List<PlacedItem>, consumed: Pt, strip: Rect, position: BandPosition): List<PlacedItem> {
+        val drop = when (position) {
+            BandPosition.Header -> Pt.ZERO
+            BandPosition.Footer -> strip.height - consumed
+        }
+        return plan.map { item -> item.translated(strip.left, strip.top - drop) }
     }
 
     /**
@@ -171,4 +312,21 @@ internal class BandPlanner(theme: Theme, fonts: FontCatalog) {
             cause = cause,
         )
     }
+
+    private companion object {
+        /**
+         * How many times the content is paginated again after the first,
+         * against a strip that grew. Two settle every band that reads the page
+         * count — the count can only grow so far before its digits stop
+         * changing — and the rest are margin.
+         */
+        const val MAX_PASSES: Int = 4
+
+        /** The share of the smallest printable height a band may grow to: one in four. */
+        const val GROWTH_SHARE: Float = 4.0f
+    }
 }
+
+/** Whether this band's strip is settled by measuring its content. */
+private val BandSpec?.grows: Boolean
+    get() = this != null && (height == null || overflow == BandOverflow.Grow)

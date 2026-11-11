@@ -300,6 +300,14 @@ public typealias Metadata = io.pdfkt.core.doc.Metadata
 public typealias BandPages = io.pdfkt.core.doc.BandPages
 
 /**
+ * What a running head or foot does when its content is taller than its strip —
+ * grows the strip (`Grow`, the default), draws what fits (`Clip`), or refuses
+ * the document (`Fail`). What [DocumentScope.header] and [DocumentScope.footer]
+ * take as their `overflow`.
+ */
+public typealias BandOverflow = io.pdfkt.core.doc.BandOverflow
+
+/**
  * Which page of how many a band is being drawn on — what the [DocumentScope.header]
  * and [DocumentScope.footer] overloads taking a function are handed, and what
  * makes "Page 3 of 12" a line the DSL can write.

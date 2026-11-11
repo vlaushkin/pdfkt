@@ -18,6 +18,7 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 // No clause applies: a colophon written as blocks is this library's own design.
@@ -52,7 +53,7 @@ class RichColophonScopeTest {
         }.toDocumentSpec()
 
         val head = assertNotNull(spec.header)
-        assertEquals(DEFAULT_BAND_HEIGHT, head.height, "the same strip a colophon gets when nobody says")
+        assertNull(head.height, "the same strip a colophon gets when nobody says: its content's")
         assertEquals(BandPages.All, head.pages)
 
         val blocks = head.content(PageNumbering(page = 1, pages = 3))

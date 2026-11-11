@@ -89,8 +89,8 @@ public data class DocumentSpec(
     public val printableArea: Rect get() = printableArea(pageSize, margins)
 
     /**
-     * Where the blocks go: the printable area with the bands taken off the top
-     * and the bottom.
+     * Where the blocks go: the printable area with the bands, and the gaps
+     * they keep clear, taken off the top and the bottom.
      *
      * The fragmenter is given this and nothing else: it receives the content
      * area *between* the bands and never knows the bands exist. A reserved
@@ -125,23 +125,39 @@ public data class DocumentSpec(
 
     /** [contentArea] of a page of [size] with [margins]. */
     public fun contentArea(size: Size, margins: Insets): Rect = printableArea(size, margins).deflate(
-        Insets(Pt.ZERO, footer?.height ?: Pt.ZERO, Pt.ZERO, header?.height ?: Pt.ZERO),
+        Insets(Pt.ZERO, footer.reserve + footer.clearance, Pt.ZERO, header.reserve + header.clearance),
     )
 
     /** [headerArea] of a page of [size] with [margins]. */
     public fun headerArea(size: Size, margins: Insets): Rect? = header?.let { band ->
         val printable = printableArea(size, margins)
-        Rect(printable.x, printable.top - band.height, printable.width, band.height)
+        Rect(printable.x, printable.top - band.reserve, printable.width, band.reserve)
     }
 
     /** [footerArea] of a page of [size] with [margins]. */
     public fun footerArea(size: Size, margins: Insets): Rect? = footer?.let { band ->
         val printable = printableArea(size, margins)
-        Rect(printable.x, printable.y, printable.width, band.height)
+        Rect(printable.x, printable.y, printable.width, band.reserve)
     }
 
     /** [pageTemplate] of a page of [size] with [margins]. */
     public fun pageTemplate(size: Size, margins: Insets): PageTemplate = PageTemplate(size, contentArea(size, margins))
 
-    private val bandHeight: Pt get() = (header?.height ?: Pt.ZERO) + (footer?.height ?: Pt.ZERO)
+    private val bandHeight: Pt get() = header.reserve + header.clearance + footer.reserve + footer.clearance
+
+    /**
+     * This document with its bands reserving [header] and [footer] — the strips
+     * their sizing settled on. A band whose content sets its height has none
+     * until then, and reserves nothing.
+     */
+    internal fun reserving(header: Pt, footer: Pt): DocumentSpec = copy(
+        header = this.header?.reserving(header),
+        footer = this.footer?.reserving(footer),
+    )
 }
+
+/** The strip a band reserves as it stands: none for no band, or for one not yet sized. */
+private val BandSpec?.reserve: Pt get() = this?.height ?: Pt.ZERO
+
+/** The space a band keeps clear between its strip and the content: none for no band. */
+private val BandSpec?.clearance: Pt get() = this?.gap ?: Pt.ZERO

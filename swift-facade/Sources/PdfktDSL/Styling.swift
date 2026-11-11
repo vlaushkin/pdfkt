@@ -133,6 +133,20 @@ public enum BandPageSelection {
     }
 }
 
+/// What a running head or foot does when its content is taller than its
+/// strip: grows the strip, draws what fits, or refuses the document.
+public enum BandOverflowPolicy {
+    case grow, clip, fail
+
+    internal var kotlin: BandOverflow {
+        switch self {
+        case .grow: return .grow
+        case .clip: return .clip
+        case .fail: return .fail
+        }
+    }
+}
+
 /// A list's marker.
 public enum ListMarker {
     case bullet, circle, square, dash

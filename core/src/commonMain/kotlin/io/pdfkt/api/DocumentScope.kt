@@ -144,12 +144,13 @@ public class DocumentScope internal constructor() : BlockSink {
      * footer("pdfkt")
      * ```
      *
-     * The strip [height] is reserved on every page whether or not a line is drawn
-     * there, which is what makes the pagination independent of the colophon
-     * — a cover page whose head is blank
-     * is a page whose text begins where every other page's text begins. Text that
-     * does not fit the strip it was given stops the document at the seam, before
-     * a byte is written, rather than spilling into the first paragraph.
+     * The strip is as tall as the line when no [height] is given — two lines, if
+     * the text wraps to two — and is reserved on every page whether or not a
+     * line is drawn there, which is what makes the pagination independent of
+     * the colophon: a cover page whose head is blank is a page whose text
+     * begins where every other page's text begins. Text taller than a [height]
+     * that is given grows the strip, or does what [overflow] says instead; it
+     * never spills into the first paragraph.
      *
      * The line is set in the theme, like any other paragraph: a document in an
      * alphabet the standard 14 fonts do not cover needs a [theme] whose
@@ -163,17 +164,23 @@ public class DocumentScope internal constructor() : BlockSink {
      *   sections — is the overload taking a function of the numbering.
      * @param align where the line sits across the strip.
      * @param height the strip reserved for it, taken off the content area of
-     *   every page.
+     *   every page; null for a strip as tall as the text.
      * @param pages which pages carry it: all of them, the first only — a cover —
      *   or all but the first.
+     * @param overflow what text taller than [height] does: grow the strip,
+     *   draw the lines that fit, or refuse the document.
+     * @param gap the space kept clear between the strip and the text of the
+     *   page, reserved with it.
      */
     public fun header(
         text: String,
         align: TextAlign = TextAlign.Start,
-        height: Pt = DEFAULT_BAND_HEIGHT,
+        height: Pt? = null,
         pages: BandPages = BandPages.All,
+        overflow: BandOverflow = BandOverflow.Grow,
+        gap: Pt = DEFAULT_BAND_GAP,
     ) {
-        head = colophon(text, align, height, pages)
+        head = colophon(text, align, height, pages, overflow, gap)
     }
 
     /**
@@ -197,9 +204,11 @@ public class DocumentScope internal constructor() : BlockSink {
         firstPage: String,
         otherPages: String,
         align: TextAlign = TextAlign.Start,
-        height: Pt = DEFAULT_BAND_HEIGHT,
+        height: Pt? = null,
+        overflow: BandOverflow = BandOverflow.Grow,
+        gap: Pt = DEFAULT_BAND_GAP,
     ) {
-        head = colophon(firstPage, otherPages, align, height)
+        head = colophon(firstPage, otherPages, align, height, overflow, gap)
     }
 
     /**
@@ -228,8 +237,9 @@ public class DocumentScope internal constructor() : BlockSink {
      *
      * Everything else is the text form's: one head per document, whichever
      * spelling described it last; the strip reserved on every page whether the
-     * band is drawn there or not; content that does not fit the strip stopping the
-     * document at the seam rather than spilling into the first paragraph.
+     * band is drawn there or not, as tall as its content unless a height is
+     * given; content taller than a given height growing the strip, or doing
+     * what [overflow] says, rather than spilling into the first paragraph.
      *
      * A block that writes nothing is refused, on the page it writes nothing on:
      * a head is drawn or it is not, and which pages carry one is [pages]. That
@@ -237,16 +247,21 @@ public class DocumentScope internal constructor() : BlockSink {
      * lambda whose string goes nowhere —
      * meets, instead of a band that silently comes out blank.
      *
-     * @param height the strip reserved on every page, drawn on or not.
+     * @param height the strip reserved on every page, drawn on or not; null
+     *   for one as tall as the colophon is on the page it is tallest on.
      * @param pages which pages carry it.
+     * @param overflow what content taller than [height] does.
+     * @param gap the space kept clear between the strip and the text of the page.
      * @param block the colophon, written the way the document is written.
      */
     public fun header(
-        height: Pt = DEFAULT_BAND_HEIGHT,
+        height: Pt? = null,
         pages: BandPages = BandPages.All,
+        overflow: BandOverflow = BandOverflow.Grow,
+        gap: Pt = DEFAULT_BAND_GAP,
         block: ColophonScope.() -> Unit,
     ) {
-        headerBand(height, pages) { numbering -> colophonContent(numbering, block) }
+        headerBand(height, pages, overflow, gap) { numbering -> colophonContent(numbering, block) }
     }
 
     /**
@@ -270,19 +285,25 @@ public class DocumentScope internal constructor() : BlockSink {
      *
      * The [content] function is [BandSpec.content] itself: it is called once per
      * page the band is drawn on, with the numbering of that page, and whatever it
-     * hands back is planned into the reserved strip. Blocks that do not fit the
-     * strip stop the document at the seam, as any other band's do.
+     * hands back is planned into the reserved strip, which is as tall as those
+     * blocks when no [height] is given. Blocks taller than the strip do what
+     * [overflow] says, as any other band's do.
      *
-     * @param height the strip reserved on every page, drawn on or not.
+     * @param height the strip reserved on every page, drawn on or not; null
+     *   for one as tall as the band's blocks.
      * @param pages which pages carry the band.
+     * @param overflow what blocks taller than [height] do.
+     * @param gap the space kept clear between the strip and the text of the page.
      * @param content the blocks of the band on a given page.
      */
     public fun headerBand(
-        height: Pt = DEFAULT_BAND_HEIGHT,
+        height: Pt? = null,
         pages: BandPages = BandPages.All,
+        overflow: BandOverflow = BandOverflow.Grow,
+        gap: Pt = DEFAULT_BAND_GAP,
         content: (PageNumbering) -> List<Block>,
     ) {
-        head = BandSpec(height, pages, content)
+        head = BandSpec(height, pages, overflow, gap, content)
     }
 
     /**
@@ -293,10 +314,12 @@ public class DocumentScope internal constructor() : BlockSink {
     public fun footer(
         text: String,
         align: TextAlign = TextAlign.Right,
-        height: Pt = DEFAULT_BAND_HEIGHT,
+        height: Pt? = null,
         pages: BandPages = BandPages.All,
+        overflow: BandOverflow = BandOverflow.Grow,
+        gap: Pt = DEFAULT_BAND_GAP,
     ) {
-        foot = colophon(text, align, height, pages)
+        foot = colophon(text, align, height, pages, overflow, gap)
     }
 
     /**
@@ -307,9 +330,11 @@ public class DocumentScope internal constructor() : BlockSink {
         firstPage: String,
         otherPages: String,
         align: TextAlign = TextAlign.Right,
-        height: Pt = DEFAULT_BAND_HEIGHT,
+        height: Pt? = null,
+        overflow: BandOverflow = BandOverflow.Grow,
+        gap: Pt = DEFAULT_BAND_GAP,
     ) {
-        foot = colophon(firstPage, otherPages, align, height)
+        foot = colophon(firstPage, otherPages, align, height, overflow, gap)
     }
 
     /**
@@ -326,11 +351,13 @@ public class DocumentScope internal constructor() : BlockSink {
      * written the same way come out the same way.
      */
     public fun footer(
-        height: Pt = DEFAULT_BAND_HEIGHT,
+        height: Pt? = null,
         pages: BandPages = BandPages.All,
+        overflow: BandOverflow = BandOverflow.Grow,
+        gap: Pt = DEFAULT_BAND_GAP,
         block: ColophonScope.() -> Unit,
     ) {
-        footerBand(height, pages) { numbering -> colophonContent(numbering, block) }
+        footerBand(height, pages, overflow, gap) { numbering -> colophonContent(numbering, block) }
     }
 
     /**
@@ -338,11 +365,13 @@ public class DocumentScope internal constructor() : BlockSink {
      * form of a foot, on the same terms as [headerBand].
      */
     public fun footerBand(
-        height: Pt = DEFAULT_BAND_HEIGHT,
+        height: Pt? = null,
         pages: BandPages = BandPages.All,
+        overflow: BandOverflow = BandOverflow.Grow,
+        gap: Pt = DEFAULT_BAND_GAP,
         content: (PageNumbering) -> List<Block>,
     ) {
-        foot = BandSpec(height, pages, content)
+        foot = BandSpec(height, pages, overflow, gap, content)
     }
 
     /**
@@ -557,9 +586,16 @@ public class DocumentScope internal constructor() : BlockSink {
  * that a band *may* depend on which page it is on, not so that one which does not
  * has to be rebuilt eleven times.
  */
-private fun colophon(text: String, align: TextAlign, height: Pt, pages: BandPages): BandSpec {
+private fun colophon(
+    text: String,
+    align: TextAlign,
+    height: Pt?,
+    pages: BandPages,
+    overflow: BandOverflow,
+    gap: Pt,
+): BandSpec {
     val blocks = colophonBlocks(text, align)
-    return BandSpec(height, pages) { blocks }
+    return BandSpec(height, pages, overflow, gap) { blocks }
 }
 
 /**
@@ -571,10 +607,17 @@ private fun colophon(text: String, align: TextAlign, height: Pt, pages: BandPage
  * `PageNumbering.page`, which is why there is no fourth case here." Both lines
  * are built once, for the same reason the constant one is.
  */
-private fun colophon(firstPage: String, otherPages: String, align: TextAlign, height: Pt): BandSpec {
+private fun colophon(
+    firstPage: String,
+    otherPages: String,
+    align: TextAlign,
+    height: Pt?,
+    overflow: BandOverflow,
+    gap: Pt,
+): BandSpec {
     val first = colophonBlocks(firstPage, align)
     val rest = colophonBlocks(otherPages, align)
-    return BandSpec(height, BandPages.All) { numbering ->
+    return BandSpec(height, BandPages.All, overflow, gap) { numbering ->
         if (numbering.page == FIRST_PAGE) first else rest
     }
 }
@@ -597,16 +640,17 @@ private fun colophonBlocks(text: String, align: TextAlign): List<Block> = listOf
 )
 
 /**
- * The strip a colophon gets when the caller does not say.
+ * The space a colophon keeps clear between its strip and the text of the page
+ * when the caller does not say — the theme's default spacing after a
+ * paragraph, so that a head cut to its one line is set off from the first line
+ * of the text as one paragraph is from the next, rather than read as the line
+ * before it.
  *
  * One value, read by every spelling of a band, so two spellings cannot disagree
- * about how much room a running head takes and print the same header at two
- * heights on the same paper. It is stated in the DSL rather than in `:core`
- * because how much of a page goes to a band is a decision about the page —
- * which belongs to the DSL, not to the engine, whose business
- * is only what fits in the strip once it has one.
+ * about it. It is stated in the DSL rather than in `:core` because how much of
+ * a page goes to a band is a decision about the page.
  */
-public val DEFAULT_BAND_HEIGHT: Pt = 28.pt
+public val DEFAULT_BAND_GAP: Pt = 6.pt
 
 /** The page a document's first page is, counted as a reader counts. */
 private const val FIRST_PAGE: Int = 1

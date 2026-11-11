@@ -16,6 +16,7 @@ import io.pdfkt.core.doc.BandSpec
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 // No clause applies: which pages a running head is drawn on and what it says
@@ -63,7 +64,7 @@ class RichBandScheduleTest {
     fun aCoverColophonIsDrawnOnTheFirstPageOnly() {
         val spec = document {
             clock = PINNED_CLOCK
-            header(HEAD, pages = BandPages.FirstOnly)
+            header(HEAD, height = COVER_STRIP, pages = BandPages.FirstOnly)
             paragraph(BODY)
         }.toDocumentSpec()
 
@@ -75,7 +76,7 @@ class RichBandScheduleTest {
         // The reserve is not the rule: the strip comes off every page whether or
         // not the band is drawn there, which is what keeps the text of page 2
         // beginning where the text of page 1 begins.
-        assertEquals(DEFAULT_BAND_HEIGHT, head.height)
+        assertEquals(COVER_STRIP, head.height)
         assertTrue(spec.contentArea.height < spec.printableArea.height, "the strip should be reserved on every page")
     }
 
@@ -204,7 +205,7 @@ class RichBandScheduleTest {
         )
 
         val foot = assertNotNull(spec.footer)
-        assertEquals(DEFAULT_BAND_HEIGHT, foot.height, "the same strip a colophon gets when nobody says")
+        assertNull(foot.height, "the same strip a colophon gets when nobody says: its content's")
         assertEquals(BandPages.All, foot.pages)
         assertEquals(listOf(TextRun("3/7")), foot.lineOn(page = 3, of = 7).content)
     }
@@ -214,6 +215,9 @@ class RichBandScheduleTest {
         content(PageNumbering(page = page, pages = of)).single() as ParagraphBlock
 
     private companion object {
+        /** A strip given rather than measured, so the reserve can be read off the spec. */
+        val COVER_STRIP: Pt = 24.pt
+
         const val TITLE = "Отчёт за IV квартал 2026"
         const val HEAD = "Отчёт за квартал"
         const val FOOT = "Черновик"

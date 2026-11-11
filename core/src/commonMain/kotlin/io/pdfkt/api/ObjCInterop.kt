@@ -60,6 +60,33 @@ public fun BlockSink.spacedParagraph(
 }
 
 /**
+ * [DocumentScope.header] in its block form, for a caller on the Objective-C
+ * bridge: a nullable [Pt] is a box Swift cannot fill, a nullable `Double` of
+ * points arrives as a `KotlinDouble` it can. A null [height] is a strip as tall
+ * as the colophon, as it is in the Kotlin form; [gap] is in points.
+ */
+public fun DocumentScope.colophonHeader(
+    height: Double?,
+    pages: BandPages,
+    overflow: BandOverflow,
+    gap: Double,
+    block: ColophonScope.() -> Unit,
+) {
+    header(height = height?.pt, pages = pages, overflow = overflow, gap = gap.pt, block = block)
+}
+
+/** [DocumentScope.footer] in its block form, for the same caller as [colophonHeader]. */
+public fun DocumentScope.colophonFooter(
+    height: Double?,
+    pages: BandPages,
+    overflow: BandOverflow,
+    gap: Double,
+    block: ColophonScope.() -> Unit,
+) {
+    footer(height = height?.pt, pages = pages, overflow = overflow, gap = gap.pt, block = block)
+}
+
+/**
  * A [Theme] that sets the whole document in [family] — body text and every
  * level of heading — at [fontSize], [lineHeight] times the size apart, in
  * [textColor] (`0xRRGGBB`), and is otherwise [Theme.Default].
