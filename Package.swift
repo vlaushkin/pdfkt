@@ -22,8 +22,8 @@ let package = Package(
     targets: [
         .binaryTarget(
             name: "Pdfkt",
-            url: "https://github.com/vlaushkin/pdfkt/releases/download/v0.0.7/Pdfkt.xcframework.zip",
-            checksum: "470b5a5f64d08fc870b43d47dfbb0887dd6ab02444d0fb7dc17cc8f618c998bd"
+            url: "https://github.com/vlaushkin/pdfkt/releases/download/v0.0.8/Pdfkt.xcframework.zip",
+            checksum: "9ab08235a593bee83a771463c921dbd8eec467f57fdc63b78125277705a13032"
         ),
         .target(
             name: "PdfktDSL",
